@@ -4,6 +4,7 @@ import json
 
 import requests
 from dotenv import dotenv_values
+from boto3 import client
 
 REDDIT_URL = "https://www.reddit.com/r/"
 SUBREDDIT_URL = "https://www.reddit.com/"
@@ -39,6 +40,14 @@ def save_json_to_file(json_contents: dict, json_filename: str) -> None:
     with open(json_filename, "w", encoding="utf-8") as f_obj:
         json.dump(json_contents, f_obj, sort_keys=True,
                   indent=4, separators=(",", ": "))
+
+
+def upload_json_s3(config: dict, json_filename: str) -> None:
+    """Uploads a JSON file to an S3 bucket."""
+    s3_client = client("s3", aws_access_key_id=config["ACCESS_KEY_ID"],
+                       aws_secret_access_key=config["SECRET_ACCESS_KEY"])
+    s3_client.upload_file(
+        json_filename, config["REDDIT_JSON_BUCKET_NAME"], json_filename)
 
 
 def get_json_for_request(subreddit_url: str, json_filename: str):
