@@ -6,6 +6,7 @@ __pycache__
 .coverage
 *.ipynb
 *.csv
+*.xml
 *.json
 .DS_Store
 *.tfvars
