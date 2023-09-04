@@ -17,3 +17,9 @@ Run the extract script.
 ```sh
 python3 extract.py
 ```
+
+## Required environment variables
+
+The following environment variables must be supplied in a .env file in order to run the code in this directory.
+
+- `REDDIT_TOPIC`
