@@ -1,9 +1,12 @@
 """Contains the functions required to extract the titles and comments for Reddit posts."""
 
+import json
+
 import requests
 from dotenv import dotenv_values
 
 REDDIT_URL = "https://www.reddit.com/r/"
+SUBREDDIT_URL = "https://www.reddit.com/"
 
 
 def get_subreddit_json(config: dict) -> dict:
@@ -29,6 +32,22 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
         except AttributeError:
             print("Missing attribute. Skipping entry.")
     return pages_list
+
+
+def save_json_to_file(json_contents: dict, json_filename: str) -> None:
+    """Writes the contents of a dictionary to a JSON file."""
+    with open(json_filename, "w", encoding="utf-8") as f_obj:
+        json.dump(json_contents, f_obj, sort_keys=True,
+                  indent=4, separators=(",", ": "))
+
+
+def get_json_for_request(subreddit_url: str, json_filename: str):
+    """Saves the contents of a GET request to a JSON file."""
+    response = requests.get(subreddit_url)
+    if response.status_code != 200:
+        raise ConnectionError(
+            f"Unexpected non-200 status code returned for the url: {subreddit_url}. Code: {response.status_code}")
+    save_json_to_file(response.json(), json_filename)
 
 
 if __name__ == "__main__":  # pragma: no cover
