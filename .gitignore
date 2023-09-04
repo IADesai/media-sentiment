@@ -1,0 +1,15 @@
+venv
+.env
+.terraform
+__pycache__
+.pytest_cache
+.coverage
+*.ipynb
+*.csv
+*.json
+.DS_Store
+*.tfvars
+*.tfstate
+*.tfstate.backup
+*.terraform.lock.hcl
+*.terraform.tfstate.lock.info
