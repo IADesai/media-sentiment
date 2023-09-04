@@ -1,10 +1,12 @@
 """Contains the functions required to extract the titles and comments for Reddit posts."""
 
 import json
+from datetime import datetime
 
 import requests
 from dotenv import dotenv_values
 from boto3 import client
+from pytz import timezone
 
 REDDIT_URL = "https://www.reddit.com/r/"
 SUBREDDIT_URL = "https://www.reddit.com/"
@@ -33,6 +35,16 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
         except AttributeError:
             print("Missing attribute. Skipping entry.")
     return pages_list
+
+
+def create_json_filename(reddit_title: str) -> str:
+    """Returns a JSON filename using a title."""
+    reddit_title = reddit_title.replace(" ", "_")
+    if len(reddit_title) > 30:
+        reddit_title = reddit_title[:30]
+    current_timestamp = datetime.strftime(datetime.now(
+        tz=timezone("Europe/London")), "%Y_%m_%d-%H_%M")
+    return f"{reddit_title}-{current_timestamp}.json"
 
 
 def save_json_to_file(json_contents: dict, json_filename: str) -> None:
