@@ -428,6 +428,12 @@ resource "aws_lambda_function" "media-sentiment-email-lambda" {
 
 # S3 Bucket
 
+resource "aws_s3_bucket" "media-sentiment-short-term-s3" {
+  bucket = "media-sentiment-short-term-s3"
+}
+
+# S3 Glacier Bucket
+
 resource "aws_s3_bucket" "media-sentiment-long-term-s3" {
   bucket = "media-sentiment-long-term-s3"
 }
@@ -480,7 +486,7 @@ resource "aws_iam_role" "media-sentiment-state-machine-role" {
 })
 }
   inline_policy {
-    name = "media-sentiment-sf-lambda-inline-policy"
+    name = "media-sentiment-sf-iam-inline-policy"
 
     policy = jsonencode ({
 	"Version": "2012-10-17",
@@ -511,7 +517,14 @@ resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
       "Parameters": {
         "LaunchType": "FARGATE",
         "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
-        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-article-sentiment-ecs"
+        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-article-sentiment-ecs",
+        "NetworkConfiguration": {
+      "AwsvpcConfiguration": {
+         "AssignPublicIp": "ENABLED",
+         "SecurityGroups": ["sg-0ac19c4c6eb7d1ca3"],
+         "Subnets": ["subnet-03b1a3e1075174995", "subnet-0cec5bdb9586ed3c4","subnet-0667517a2a13e2a6b"]
+      }
+      }
       },
       "Next": "ECS RunTask (1)"
     },
@@ -521,7 +534,14 @@ resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
       "Parameters": {
         "LaunchType": "FARGATE",
         "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
-        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-public-sentiment-ecs"
+        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-public-sentiment-ecs",
+        "NetworkConfiguration": {
+      "AwsvpcConfiguration": {
+         "AssignPublicIp": "ENABLED",
+         "SecurityGroups": ["sg-0ac19c4c6eb7d1ca3"],
+         "Subnets": ["subnet-03b1a3e1075174995", "subnet-0cec5bdb9586ed3c4","subnet-0667517a2a13e2a6b"]
+      }
+      }
       },
       "Next": "Lambda Invoke"
     },
@@ -555,8 +575,8 @@ EOF
 
 # 6 Hour Scheduler
 
-resource "aws_iam_role" "media-sentiment-six-scheduler-target-role" {
-  name = "media-sentiment-six-scheduler-target-role"
+resource "aws_iam_role" "media-sentiment-six-scheduler-role" {
+  name = "media-sentiment-six-scheduler-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -570,12 +590,10 @@ resource "aws_iam_role" "media-sentiment-six-scheduler-target-role" {
       },
     ],
   })
-}
+  inline_policy {
+    name = "media-sentiment-scheduler-inline-policy"
 
-resource "aws_iam_policy" "media-sentiment-six-scheduler-target-policy" {
-  name        = "media-sentiment-six-scheduler-target-policy"
-  description = "IAM policy for EventBridge target to start Step Function execution"
-  policy = jsonencode({
+    policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
@@ -586,11 +604,6 @@ resource "aws_iam_policy" "media-sentiment-six-scheduler-target-policy" {
     ],
   })
 }
-
-resource "aws_iam_policy_attachment" "media-sentiment-six-scheduler-target-attachment" {
-  name       = "media-sentiment-six-scheduler-target-attachment"
-  roles      = [aws_iam_role.media-sentiment-six-scheduler-target-role.name]
-  policy_arn = aws_iam_policy.media-sentiment-six-scheduler-target-policy.arn
 }
 
 resource "aws_scheduler_schedule" "media-sentiment-state-machine-schedule" {
@@ -606,7 +619,7 @@ resource "aws_scheduler_schedule" "media-sentiment-state-machine-schedule" {
   schedule_expression = "cron(0 */6 * * ? *)"
 
   target {
-    arn      = aws_ecs_cluster.media-sentiment-cluster.arn
-    role_arn = aws_iam_role.media-sentiment-six-scheduler-target-role.arn
-  }
+    arn      = "arn:aws:states:eu-west-2:129033205317:stateMachine:media-sentiment-state-machine"
+    role_arn = aws_iam_role.media-sentiment-six-scheduler-role.arn
+    }
 }
