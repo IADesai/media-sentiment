@@ -98,7 +98,8 @@ def get_json_from_request(subreddit_url: str, reddit_access_token: str) -> dict:
     response = requests.get(subreddit_url, headers=auth_headers)
     if response.status_code != 200:
         raise ConnectionError(
-            f"Unexpected non-200 status code returned for the url: {subreddit_url}. Code: {response.status_code}")
+            f"Unexpected non-200 status code returned for the url: {subreddit_url}. " +
+            f"Code: {response.status_code}")
     return response.json()
 
 
@@ -117,7 +118,9 @@ def get_comments_list(json_filename: str) -> list[str]:
         find_comment = re.search(r"\"body\": \"(.+)\",", line)
         if find_comment:
             comment = find_comment.group(1)
-            if comment not in {"[removed]", "[deleted]"} and "**Removed/tempban**" not in comment and "**Removed/warning**" not in comment:
+            if (comment not in {"[removed]", "[deleted]"}
+                and "**Removed/tempban**" not in comment
+                    and "**Removed/warning**" not in comment):
                 comment_list.append(find_comment.group(1))
     return comment_list
 
