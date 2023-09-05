@@ -133,15 +133,15 @@ resource "aws_scheduler_schedule" "media-sentiment-rss-pipeline-scheduler" {
   schedule_expression = "cron(0 * * * ? *)"
 
   target {
-    arn      = "arn:aws:lambda:eu-west-2:129033205317:function:media-sentiment-rss-lambda"
-    role_arn = "arn:aws:iam::129033205317:role/media-sentiment-rss-scheduler-role"
+    arn      = aws_lambda_function.media-sentiment-rss-lambda.arn
+    role_arn = aws_iam_role.media-sentiment-rss-scheduler-role.arn
   }
 }
 
 # Media Sentiment RDS
 
 resource "aws_security_group" "media-sentiment-rds-sg" {
-  vpc_id = "vpc-0e0f897ec7ddc230d"
+  vpc_id = data.aws_vpc.cohort-8-VPC.id
   name = "media-sentiment-rds-sg"
   ingress {
     from_port = 5432
@@ -223,12 +223,6 @@ resource "aws_ecr_repository" "media-sentiment-public-sentiment-ecr" {
 resource "aws_security_group" "media-sentiment-ecs-sg" {
   name = "media-sentiment-ecs-sg"
   vpc_id = data.aws_vpc.cohort-8-VPC.id
-    ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
   egress {
     from_port        = 0
     to_port          = 0
@@ -251,14 +245,6 @@ resource "aws_ecs_task_definition" "media-sentiment-public-sentiment-ecs" {
       "name" : "media-sentiment-public-sentiment-pipeline",
       "image" : "129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-public-sentiment-ecr:latest",
       "portMappings" : [
-        {
-          "name" : "443-mapping",
-          "cpu" : 0,
-          "containerPort" : 443,
-          "hostPort" : 443,
-          "protocol" : "tcp",
-          "appProtocol" : "http"
-        },
         {
           "name" : "80-mapping",
           "containerPort" : 80,
@@ -321,16 +307,8 @@ resource "aws_ecs_task_definition" "media-sentiment-article-sentiment-ecs" {
   container_definitions = jsonencode([
     {
       "name" : "media-sentiment-public-sentiment-pipeline",
-      "image" : "http://129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-article-sentiment-ecr:latest",
+      "image" : "129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-article-sentiment-ecr:latest",
       "portMappings" : [
-        {
-          "name" : "443-mapping",
-          "cpu" : 0,
-          "containerPort" : 443,
-          "hostPort" : 443,
-          "protocol" : "tcp",
-          "appProtocol" : "http"
-        },
         {
           "name" : "80-mapping",
           "containerPort" : 80,
@@ -426,17 +404,19 @@ resource "aws_lambda_function" "media-sentiment-email-lambda" {
   }
 }
 
-# S3 Bucket
+# S3 reddit bucket
 
-resource "aws_s3_bucket" "media-sentiment-short-term-s3" {
-  bucket = "media-sentiment-short-term-s3"
+resource "aws_s3_bucket" "media-sentiment-reddit-json-short-term" {
+  bucket = "media-sentiment-reddit-json-short-term"
 }
 
-# S3 Glacier Bucket
+# S3 report pdf bucket
 
-resource "aws_s3_bucket" "media-sentiment-long-term-s3" {
-  bucket = "media-sentiment-long-term-s3"
+resource "aws_s3_bucket" "media-sentiment-pdf-reports-short-term" {
+  bucket = "media-sentiment-pdf-reports-short-term"
 }
+
+# S3 Glacier
 
 # State Machine
 
@@ -500,6 +480,45 @@ resource "aws_iam_role" "media-sentiment-state-machine-role" {
 	]
 })
 }
+  inline_policy {
+    name = "media-sentiment-sf-sync-inline-policy"
+
+    policy = jsonencode ({
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "states:StartExecution"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "states:DescribeExecution",
+                "states:StopExecution"
+            ],
+            "Resource": [
+               "*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "events:PutTargets",
+                "events:PutRule",
+                "events:DescribeRule"
+            ],
+            "Resource": [
+               "*"
+            ]
+        }
+    ]
+})
+}
 }
 
 resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
@@ -513,7 +532,7 @@ resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
   "States": {
     "ECS RunTask": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::ecs:runTask",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
       "Parameters": {
         "LaunchType": "FARGATE",
         "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
@@ -530,7 +549,7 @@ resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
     },
     "ECS RunTask (1)": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::ecs:runTask",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
       "Parameters": {
         "LaunchType": "FARGATE",
         "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
