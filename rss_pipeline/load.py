@@ -1,6 +1,6 @@
 '''Extracts data from the rss news articles and populates the media-sentiment relational database (rds)'''
-from os import environ
 
+from os import environ
 
 from dotenv import load_dotenv
 import pandas as pd
