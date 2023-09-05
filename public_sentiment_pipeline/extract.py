@@ -66,12 +66,14 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
 
 def create_json_filename(reddit_title: str) -> str:
     """Returns a JSON filename using a title."""
-    reddit_title = reddit_title.replace(" ", "_")
+    forbidden_characters = (" ", "-", "\"", ".", ",")
+    for character in forbidden_characters:
+        reddit_title = reddit_title.replace(character, "_")
     if len(reddit_title) > 30:
         reddit_title = reddit_title[:30]
     current_timestamp = datetime.strftime(datetime.now(
         tz=timezone("Europe/London")), "%Y_%m_%d-%H_%M")
-    return f"{reddit_title}-{current_timestamp}.json"
+    return f"{current_timestamp}-{reddit_title}.json"
 
 
 def save_json_to_file(json_contents: dict, json_filename: str) -> None:
