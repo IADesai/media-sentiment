@@ -87,3 +87,43 @@ def fake_subreddit_json_missing_entries():
             ]
         }
     }
+
+
+@pytest.fixture
+def fake_json_content_1():
+    return ['                        "awarders": [],",',
+            '                        "banned_at_utc": null,',
+            '                        "banned_by": null,',
+            '                        "body": "This is the first comment.",',
+            '                        "body_html": "&lt;div class=\"md\"&gt;&lt;p&gt;This is the first comment.&lt;/p&gt;\n&lt;/div&gt;",',
+            '                        "can_gild": true,',
+            '                        "can_mod_post": false,',
+            '                        "collapsed": false,',
+            '                        "awarders": [],"',
+            '                        "banned_at_utc": null,',
+            '                        "banned_by": null,',
+            '                        "body": "This is the second comment.",',
+            '                        "body_html": "&lt;div class=\"md\"&gt;&lt;p&gt;This is the second comment.&lt;/p&gt;\n&lt;/div&gt;",',
+            '                        "can_gild": true,',
+            '                        "can_mod_post": false,',
+            '                        "collapsed": false,']
+
+
+@pytest.fixture
+def fake_json_content_2():
+    return ['                        "awarders": [],",',
+            '                        "banned_at_utc": null,',
+            '                        "banned_by": null,',
+            '                        "body": "This is the third comment.",',
+            '                        "body_html": "&lt;div class=\"md\"&gt;&lt;p&gt;This is the first comment.&lt;/p&gt;\n&lt;/div&gt;",',
+            '                        "can_gild": true,',
+            '                        "body": "[removed]",',
+            '                        "collapsed": false,',
+            '                        "body": "[deleted]",',
+            '                        "banned_at_utc": null,',
+            '                        "body": "**Removed/tempban**",',
+            '                        "body": "This is the fourth comment.",',
+            '                        "body_html": "&lt;div class=\"md\"&gt;&lt;p&gt;This is the second comment.&lt;/p&gt;\n&lt;/div&gt;",',
+            '                        "can_gild": true,',
+            '                        "body": "**Removed/warning**",',
+            '                        "collapsed": false,']

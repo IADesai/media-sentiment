@@ -8,7 +8,7 @@ from re import match
 import pytest
 
 from conftest import FakeGet, FakePost
-from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename, get_json_from_request
+from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename, get_json_from_request, get_comments_list, process_each_reddit_page
 
 
 @patch("requests.get")
@@ -95,6 +95,7 @@ def test_pages_list_skips_missing_data(fake_subreddit_json_missing_entries):
                           (" m\"ulti.ple  inva,l-id", "_m_ulti_ple__inva_l_id"),
                           ("ThisTitleIsFarTooLongAndWillBeReducedInLength", "ThisTitleIsFarTooLongAndWillBe")])
 def test_json_filename_title_formatting(reddit_title, expected_title_end):
+    """Tests the filename is correctly formatted by removing invalid characters."""
     res = create_json_filename(reddit_title)
 
     assert res.endswith(expected_title_end + ".json")
@@ -122,6 +123,7 @@ def test_json_returned_from_successful_request(fake_get):
 
 @patch("requests.get")
 def test_connection_error_raised_successful_request(fake_get):
+    """Tests a Connection error is raised if a non-200 status code is returned."""
     subreddit_url = "www.reddit.com"
     reddit_access_token = "12345"
     fake_request = FakeGet()
@@ -130,3 +132,33 @@ def test_connection_error_raised_successful_request(fake_get):
 
     with pytest.raises(ConnectionError):
         get_json_from_request(subreddit_url, reddit_access_token)
+
+
+@patch("extract.read_json_as_text")
+def test_list_of_comments_returned(fake_read_json, fake_json_content_1):
+    """Tests a list of comment strings is returned by get_comments_list()."""
+    fake_read_json.return_value = fake_json_content_1
+    res = get_comments_list("file.json")
+
+    assert isinstance(res, list)
+    assert isinstance(res[0], str)
+
+
+@patch("extract.read_json_as_text")
+def test_only_comments_extracted_from_json(fake_read_json, fake_json_content_1):
+    """Tests only comment lines are extracted from the JSON."""
+    fake_read_json.return_value = fake_json_content_1
+    res = get_comments_list("file.json")
+
+    assert len(res) == 2
+    assert res == ["This is the first comment.", "This is the second comment."]
+
+
+@patch("extract.read_json_as_text")
+def test_comment_lines_removed(fake_read_json, fake_json_content_2):
+    """Tests invalid comment lines are not returned."""
+    fake_read_json.return_value = fake_json_content_2
+    res = get_comments_list("file.json")
+
+    assert len(res) == 2
+    assert res == ["This is the third comment.", "This is the fourth comment."]
