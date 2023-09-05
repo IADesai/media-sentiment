@@ -475,7 +475,7 @@ resource "aws_iam_role" "media-sentiment-state-machine-role" {
 			"Sid": "VisualEditor0",
 			"Effect": "Allow",
 			"Action": "iam:PassRole",
-			"Resource": "arn:aws:iam::129033205317:role/*"
+			"Resource": "*"
 		}
 	]
 })
