@@ -152,6 +152,16 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
     return response_list
 
 
+def run_extract() -> list[dict]:
+    """Returns a list of dictionaries for each page in a subreddit."""
+    configuration = dotenv_values()
+    reddit_token = get_reddit_access_token(configuration)
+    reddit_json = get_subreddit_json(configuration, reddit_token)
+    list_of_json = create_pages_list(reddit_json)
+    return process_each_reddit_page(
+        list_of_json, reddit_token, configuration)
+
+
 if __name__ == "__main__":  # pragma: no cover
     configuration = dotenv_values()
     reddit_token = get_reddit_access_token(configuration)
