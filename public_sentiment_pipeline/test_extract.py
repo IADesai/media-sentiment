@@ -3,6 +3,7 @@
 Unit tests are designed to be run with pytest."""
 
 from unittest.mock import MagicMock, patch
+from re import match
 
 import pytest
 
@@ -97,3 +98,12 @@ def test_json_filename_title_formatting(reddit_title, expected_title_end):
     res = create_json_filename(reddit_title)
 
     assert res.endswith(expected_title_end + ".json")
+
+
+def test_file_date_format_correct():
+    """Tests the date is correctly formatted when creating the JSON filename."""
+    reddit_title = ""
+
+    res = create_json_filename(reddit_title)
+
+    assert match(r"\d{4}_\d{2}_\d{2}-\d{2}_\d{2}-\.json", res)
