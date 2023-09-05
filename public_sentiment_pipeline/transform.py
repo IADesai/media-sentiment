@@ -7,6 +7,8 @@ import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import word_tokenize
 
+from extract import save_json_to_file
+
 
 from extract import run_extract
 
@@ -36,9 +38,25 @@ def calculate_sentiment_statistics(comments: list[str]) -> tuple[float]:
     return mean_sentiment, st_dev_sentiment, median_sentiment
 
 
+def add_sentiment_to_page_dict(page_response_list: list[dict]) -> list[dict]:
+    """Adds the sentiment values to the dictionary for each page."""
+    for page in page_response_list:
+        mean_sentiment, st_dev_sentiment, median_sentiment = calculate_sentiment_statistics(
+            page["comments"])
+        page["mean_sentiment"] = mean_sentiment
+        page["st_dev_sentiment"] = st_dev_sentiment
+        page["median_sentiment"] = median_sentiment
+    return page_response_list
+
+
 if __name__ == "__main__":  # pragma: no cover
     configuration = dotenv_values()
 
     list_of_page_dict = run_extract()
 
     nltk.download('vader_lexicon')
+
+    list_of_page_dict = add_sentiment_to_page_dict(list_of_page_dict)
+    print(list_of_page_dict)
+
+    save_json_to_file(list_of_page_dict, "with_sentiment_score.json")
