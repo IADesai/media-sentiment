@@ -61,7 +61,10 @@ def extract_info_from_daily_mail_articles(xml_file: str) -> pd.DataFrame:
 
 def convert_pubdate_to_timestamp(pubdate: str) -> datetime:
     """Converts the publication date to a timestamp"""
-    timestamp = datetime.strptime(pubdate, "%a, %d %b %Y %H:%M:%S %Z")
+    try:
+        timestamp = datetime.strptime(pubdate, "%a, %d %b %Y %H:%M:%S %Z")
+    except ValueError:
+        timestamp = datetime.now()
 
     return timestamp
 
@@ -78,11 +81,14 @@ def remove_headline_tags(headline: str) -> str:
         "EDITORIAL", "ANALYSIS",
         "INVESTIGATION", "SPECIAL FEATURE"]
 
-    for tag in headline_tags:
-        headline = headline.replace(tag.lower(), "").replace(
-            tag.upper(), "").replace(tag.title(), "")
+    words = headline.split()
 
-    return headline
+    if words[0].upper() in headline_tags:
+        words.pop(0)
+
+    updated_headline = ' '.join(words)
+
+    return updated_headline
 
 
 def get_sentiment_score(article_text: str) -> float:
@@ -94,6 +100,7 @@ def get_sentiment_score(article_text: str) -> float:
 
 
 if __name__ == "__main__":
+
     nltk.download('vader_lexicon')
 
     # Extract info and put in dataframe

@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import xml.etree.ElementTree as ET
 from unittest.mock import mock_open, patch
-from transform_rss import (  # Replace 'your_module_name' with the actual module name
+from transform_rss import (
     extract_info_from_bbc_articles,
     extract_info_from_daily_mail_articles,
     convert_pubdate_to_timestamp,
@@ -81,13 +81,13 @@ def test_convert_pubdate_to_timestamp():
 def test_remove_headline_tags():
     headline = "BREAKING Twitter is renamed to X"
     cleaned_headline = remove_headline_tags(headline)
-    assert cleaned_headline == " Twitter is renamed to X"
+    assert cleaned_headline == "Twitter is renamed to X"
 
 
 def test_remove_headline_tags_different_case():
     headline = "breaking Twitter is renamed to X"
     cleaned_headline = remove_headline_tags(headline)
-    assert cleaned_headline == " Twitter is renamed to X"
+    assert cleaned_headline == "Twitter is renamed to X"
 
 
 def test_get_sentiment_score():
