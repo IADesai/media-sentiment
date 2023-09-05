@@ -76,14 +76,14 @@ def create_json_filename(reddit_title: str) -> str:
     return f"{current_timestamp}-{reddit_title}.json"
 
 
-def save_json_to_file(json_contents: dict, json_filename: str) -> None:
+def save_json_to_file(json_contents: dict, json_filename: str) -> None:  # pragma: no cover
     """Writes the contents of a dictionary to a JSON file."""
     with open(json_filename, "w", encoding="utf-8") as f_obj:
         json.dump(json_contents, f_obj, sort_keys=True,
                   indent=4, separators=(",", ": "))
 
 
-def upload_json_s3(config: dict, json_filename: str) -> None:
+def upload_json_s3(config: dict, json_filename: str) -> None:  # pragma: no cover
     """Uploads a JSON file to an S3 bucket."""
     s3_client = client("s3", aws_access_key_id=config["ACCESS_KEY_ID"],
                        aws_secret_access_key=config["SECRET_ACCESS_KEY"])
@@ -103,7 +103,7 @@ def get_json_from_request(subreddit_url: str, reddit_access_token: str) -> dict:
     return response.json()
 
 
-def read_json_as_text(json_filename: str) -> list[str]:
+def read_json_as_text(json_filename: str) -> list[str]:  # pragma: no cover
     """Returns the contents of a JSON file as a list of strings."""
     with open(json_filename, "r") as f_obj:
         return f_obj.readlines()
