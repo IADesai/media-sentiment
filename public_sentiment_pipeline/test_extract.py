@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from conftest import FakeGet, FakePost, fake_subreddit_json
-from extract import get_subreddit_json, get_reddit_access_token, create_pages_list
+from conftest import FakeGet, FakePost
+from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename
 
 
 @patch("requests.get")
@@ -81,3 +81,19 @@ def test_pages_list_skips_missing_data(fake_subreddit_json_missing_entries):
     res = create_pages_list(fake_subreddit_json_missing_entries)
 
     assert len(res) == 2
+
+
+@pytest.mark.parametrize("reddit_title,expected_title_end",
+                         [("ValidTitle", "ValidTitle"),
+                          ("Replace Space", "Replace_Space"),
+                          (" Replace All Spaces ", "_Replace_All_Spaces_"),
+                          ("-Remove-Hyphen-", "_Remove_Hyphen_"),
+                          ("\"Remove\"Quotation\"", "_Remove_Quotation_"),
+                          ("Remove.FullStop", "Remove_FullStop"),
+                          ("Remove,Comma", "Remove_Comma"),
+                          (" m\"ulti.ple  inva,l-id", "_m_ulti_ple__inva_l_id"),
+                          ("ThisTitleIsFarTooLongAndWillBeReducedInLength", "ThisTitleIsFarTooLongAndWillBe")])
+def test_json_filename_title_formatting(reddit_title, expected_title_end):
+    res = create_json_filename(reddit_title)
+
+    assert res.endswith(expected_title_end + ".json")
