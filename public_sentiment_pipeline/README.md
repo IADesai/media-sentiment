@@ -23,3 +23,10 @@ python3 extract.py
 The following environment variables must be supplied in a .env file in order to run the code in this directory.
 
 - `REDDIT_TOPIC`
+- `REDDIT_JSON_BUCKET_NAME`
+- `ACCESS_KEY_ID`
+- `SECRET_ACCESS_KEY`
+- `REDDIT_CLIENT_SECRET`
+- `REDDIT_SECRET_KEY`
+- `REDDIT_USERNAME`
+- `REDDIT_PASSWORD`

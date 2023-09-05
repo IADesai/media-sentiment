@@ -10,6 +10,26 @@ from pytz import timezone
 
 REDDIT_URL = "https://www.reddit.com/r/"
 SUBREDDIT_URL = "https://www.reddit.com/"
+REDDIT_ACCESS_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
+
+
+def get_reddit_access_token(config: dict) -> dict:
+    """Obtains the access token dictionary from Reddit using a POST request."""
+    print("Fetching access token from Reddit.")
+    client_auth = requests.auth.HTTPBasicAuth(
+        config["REDDIT_CLIENT_SECRET"], config["REDDIT_SECRET_KEY"])
+    key_data = {"grant_type": "password",
+                "username": config["REDDIT_USERNAME"], "password": config["REDDIT_PASSWORD"]}
+    key_headers = {"User-Agent": "Media-Sentiment/0.1 by Media-Project"}
+
+    response = requests.post(REDDIT_ACCESS_TOKEN_URL,
+                             auth=client_auth, data=key_data, headers=key_headers)
+
+    if response.status_code != 200:
+        raise ConnectionError(
+            f"Unexpected non-200 status code returned. Code: {response.status_code}")
+    print("Successfully obtained Reddit access token.")
+    return response.json()
 
 
 def get_subreddit_json(config: dict) -> dict:
