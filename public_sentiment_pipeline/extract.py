@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime
+import re
 
 import requests
 from dotenv import dotenv_values
@@ -56,10 +57,10 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
             page_dict["title"] = page["data"]["title"]
             page_dict["subreddit_url"] = page["data"]["permalink"]
             page_dict["article_url"] = page["data"]["url"]
+            page_dict["article_domain"] = page["data"]["domain"]
             pages_list.append(page_dict)
         except AttributeError:
             print("Missing attribute. Skipping entry.")
-    print(pages_list)
     return pages_list
 
 
@@ -100,26 +101,45 @@ def get_json_from_request(subreddit_url: str, reddit_access_token: str) -> dict:
     return response.json()
 
 
+def read_json_as_text(json_filename: str) -> list[str]:
+    """Returns the contents of a JSON file as a list of strings."""
+    with open(json_filename, "r") as f_obj:
+        return f_obj.readlines()
+
+
+def get_comments_list(json_filename: str) -> list[str]:
+    """Returns a list of comments from a file."""
+    comment_list = []
+    json_content = read_json_as_text(json_filename)
+    for line in json_content:
+        line = line.strip()
+        find_comment = re.search(r"\"body\": \"(.+)\",", line)
+        if find_comment:
+            comment = find_comment.group(1)
+            if comment not in {"[removed]", "[deleted]"} and "**Removed/tempban**" not in comment and "**Removed/warning**" not in comment:
+                comment_list.append(find_comment.group(1))
+    return comment_list
+
+
 def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, config: dict) -> list[dict]:
     """Iterates through the list of Reddit pages.
 
     Fetches the JSON, uploads to S3 and processes it.
     """
+    print("Commencing fetch of subreddit pages.")
     response_list = []
     for page in pages_list:
         try:
             json_filename = create_json_filename(page["title"])
-            print(json_filename)
             page_json = get_json_from_request(
                 SUBREDDIT_URL+page["subreddit_url"], reddit_access_token)
-            print("GET request")
             save_json_to_file(page_json, json_filename)
-            print("Saved to file")
             upload_json_s3(config, json_filename)
-            print("Uploaded to S3")
-            response_list.append(page_json)
-        except ConnectionError as err:
+            page["comments"] = get_comments_list(json_filename)
+            response_list.append(page)
+        except (ConnectionError, AttributeError) as err:
             print(err)
+    print("Fetch of each subreddit page complete.")
     return response_list
 
 
@@ -130,6 +150,7 @@ if __name__ == "__main__":  # pragma: no cover
     list_of_json = create_pages_list(reddit_json)
     list_of_page_dict = process_each_reddit_page(
         list_of_json, reddit_token, configuration)
+
     print(list_of_page_dict)
-    save_json_to_file(list_of_page_dict, "list_of_json_pages.json")
-    print(len(list_of_page_dict))
+
+    save_json_to_file(list_of_page_dict, "with_comments.json")
