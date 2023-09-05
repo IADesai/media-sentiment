@@ -177,7 +177,7 @@ resource "aws_db_instance" "media-sentiment-rds" {
   performance_insights_enabled = false
   db_subnet_group_name = "public_subnet_group"
   publicly_accessible = true
-  vpc_security_group_ids = ["${aws_security_group.media-sentiment-rds-sg.id}"]
+  vpc_security_group_ids = ["${resource.aws_security_group.media-sentiment-rds-sg.id}"]
 }
 
 # ECS IAM Role
@@ -321,7 +321,7 @@ resource "aws_ecs_task_definition" "media-sentiment-article-sentiment-ecs" {
   container_definitions = jsonencode([
     {
       "name" : "media-sentiment-public-sentiment-pipeline",
-      "image" : "129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-article-sentiment-ecr:latest",
+      "image" : "http://129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-article-sentiment-ecr:latest",
       "portMappings" : [
         {
           "name" : "443-mapping",
@@ -434,42 +434,104 @@ resource "aws_s3_bucket" "media-sentiment-long-term-s3" {
 
 # State Machine
 
+resource "aws_iam_role" "media-sentiment-state-machine-role" {
+  name = "media-sentiment-state-machine-role"
+  assume_role_policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Principal": {
+          "Service": "states.amazonaws.com"
+        },
+        "Effect": "Allow",
+        "Sid": ""
+      }
+    ]
+  })
+  inline_policy {
+    name = "media-sentiment-sf-ecs-inline-policy"
+
+    policy = jsonencode({
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": "ecs:RunTask",
+			"Resource": "*"
+		}
+	]
+})
+}
+  inline_policy {
+    name = "media-sentiment-sf-lambda-inline-policy"
+
+    policy = jsonencode({
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": "lambda:InvokeFunction",
+			"Resource": "*"
+		}
+	]
+})
+}
+  inline_policy {
+    name = "media-sentiment-sf-lambda-inline-policy"
+
+    policy = jsonencode ({
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": "iam:PassRole",
+			"Resource": "arn:aws:iam::129033205317:role/*"
+		}
+	]
+})
+}
+}
+
 resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
   name     = "media-sentiment-state-machine"
-  role_arn = resource.aws_iam_role.media-sentiment-email-lambda-role.arn
+  role_arn = resource.aws_iam_role.media-sentiment-state-machine-role.arn
 
   definition = <<EOF
 {
-  "Comment": "A description of my state machine",
+  "Comment": "State machine that runs the article sentiment ECS, public sentiment ECS, and email lambda",
   "StartAt": "ECS RunTask",
   "States": {
     "ECS RunTask": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Resource": "arn:aws:states:::ecs:runTask",
       "Parameters": {
         "LaunchType": "FARGATE",
-        "Cluster": "aws_ecs_cluster.media-sentiment-cluster.id",
-        "TaskDefinition": "aws_ecs_task_definition.media-sentiment-public-sentiment-ecs.arn"
+        "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
+        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-article-sentiment-ecs"
       },
       "Next": "ECS RunTask (1)"
     },
     "ECS RunTask (1)": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Resource": "arn:aws:states:::ecs:runTask",
       "Parameters": {
         "LaunchType": "FARGATE",
-        "Cluster": "aws_ecs_cluster.media-sentiment-cluster.id",
-        "TaskDefinition": "aws_ecs_task_definition.media-sentiment-article-sentiment-ecs.arn"
+        "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
+        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-public-sentiment-ecs"
       },
       "Next": "Lambda Invoke"
     },
     "Lambda Invoke": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Resource": "arn:aws:states:::lambda:invoke",
       "OutputPath": "$.Payload",
       "Parameters": {
         "Payload.$": "$",
-        "FunctionName": "resource.aws_lambda_function.media-sentiment-email-lambda"
+        "FunctionName": "arn:aws:lambda:eu-west-2:129033205317:function:media-sentiment-email-lambda:$LATEST"
       },
       "Retry": [
         {
