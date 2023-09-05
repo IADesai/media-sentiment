@@ -24,21 +24,25 @@ def get_reddit_access_token(config: dict) -> dict:
 
     response = requests.post(REDDIT_ACCESS_TOKEN_URL,
                              auth=client_auth, data=key_data, headers=key_headers)
-
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned. Code: {response.status_code}")
     print("Successfully obtained Reddit access token.")
-    return response.json()
+    return response.json()["access_token"]
 
 
-def get_subreddit_json(config: dict) -> dict:
+def get_subreddit_json(config: dict, reddit_access_token: str) -> dict:
     """Returns the JSON for a subreddit endpoint."""
     subreddit = config["REDDIT_TOPIC"]
-    response = requests.get(f"{REDDIT_URL}{subreddit}.json")
+    print(f"Fetching data from the {subreddit} subreddit.")
+    auth_headers = {"Authorization": f"bearer {reddit_access_token}",
+                    "User-Agent": "Media-Sentiment/0.1 by Media-Project"}
+
+    response = requests.get(f"{REDDIT_URL}{subreddit}", headers=auth_headers)
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned. Code: {response.status_code}")
+    print("Successfully fetched subreddit data.")
     return response.json()
 
 
@@ -82,7 +86,7 @@ def upload_json_s3(config: dict, json_filename: str) -> None:
         json_filename, config["REDDIT_JSON_BUCKET_NAME"], json_filename)
 
 
-def get_json_for_request(subreddit_url: str, json_filename: str):
+def get_json_for_request(subreddit_url: str, json_filename: str, reddit_access_token: str):
     """Saves the contents of a GET request to a JSON file."""
     response = requests.get(subreddit_url)
     if response.status_code != 200:
