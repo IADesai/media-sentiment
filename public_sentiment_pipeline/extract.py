@@ -8,8 +8,8 @@ from dotenv import dotenv_values
 from boto3 import client
 from pytz import timezone
 
-REDDIT_URL = "https://www.reddit.com/r/"
-SUBREDDIT_URL = "https://www.reddit.com/"
+REDDIT_URL = "https://oauth.reddit.com/r/"
+SUBREDDIT_URL = "https://oauth.reddit.com/"
 REDDIT_ACCESS_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
 
 
@@ -49,15 +49,17 @@ def get_subreddit_json(config: dict, reddit_access_token: str) -> dict:
 def create_pages_list(reddit_json: dict) -> list[dict]:
     """Creates a list containing the links for each page."""
     pages_list = []
-    for page in reddit_json["data"]["data"]:
+    save_json_to_file(reddit_json, "remove.json")
+    for page in reddit_json["data"]["children"]:
         try:
             page_dict = {}
-            page_dict["title"] = page["title"]
-            page_dict["subreddit_url"] = page["url"]
-            page_dict["article_url"] = page["article_url"]
+            page_dict["title"] = page["data"]["title"]
+            page_dict["subreddit_url"] = page["data"]["permalink"]
+            page_dict["article_url"] = page["data"]["url"]
             pages_list.append(page_dict)
         except AttributeError:
             print("Missing attribute. Skipping entry.")
+    print(pages_list)
     return pages_list
 
 
@@ -86,17 +88,48 @@ def upload_json_s3(config: dict, json_filename: str) -> None:
         json_filename, config["REDDIT_JSON_BUCKET_NAME"], json_filename)
 
 
-def get_json_for_request(subreddit_url: str, json_filename: str, reddit_access_token: str):
-    """Saves the contents of a GET request to a JSON file."""
-    response = requests.get(subreddit_url)
+def get_json_from_request(subreddit_url: str, reddit_access_token: str) -> dict:
+    """Returns the contents of a subreddit page GET request."""
+    auth_headers = {"Authorization": f"bearer {reddit_access_token}",
+                    "User-Agent": "Media-Sentiment/0.1 by Media-Project"}
+
+    response = requests.get(subreddit_url, headers=auth_headers)
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned for the url: {subreddit_url}. Code: {response.status_code}")
-    save_json_to_file(response.json(), json_filename)
+    return response.json()
+
+
+def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, config: dict) -> list[dict]:
+    """Iterates through the list of Reddit pages.
+
+    Fetches the JSON, uploads to S3 and processes it.
+    """
+    response_list = []
+    for page in pages_list:
+        try:
+            json_filename = create_json_filename(page["title"])
+            print(json_filename)
+            page_json = get_json_from_request(
+                SUBREDDIT_URL+page["subreddit_url"], reddit_access_token)
+            print("GET request")
+            save_json_to_file(page_json, json_filename)
+            print("Saved to file")
+            upload_json_s3(config, json_filename)
+            print("Uploaded to S3")
+            response_list.append(page_json)
+        except ConnectionError as err:
+            print(err)
+    return response_list
 
 
 if __name__ == "__main__":  # pragma: no cover
     configuration = dotenv_values()
-    reddit_json = get_subreddit_json(configuration)
+    reddit_token = get_reddit_access_token(configuration)
+    reddit_json = get_subreddit_json(configuration, reddit_token)
     list_of_json = create_pages_list(reddit_json)
-    print(list_of_json)
+    list_of_page_dict = process_each_reddit_page(
+        list_of_json, reddit_token, configuration)
+    print(list_of_page_dict)
+    save_json_to_file(list_of_page_dict, "list_of_json_pages.json")
+    print(len(list_of_page_dict))
