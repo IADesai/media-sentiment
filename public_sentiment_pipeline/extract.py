@@ -50,7 +50,6 @@ def get_subreddit_json(config: dict, reddit_access_token: str) -> dict:
 def create_pages_list(reddit_json: dict) -> list[dict]:
     """Creates a list containing the links for each page."""
     pages_list = []
-    save_json_to_file(reddit_json, "remove.json")
     for page in reddit_json["data"]["children"]:
         try:
             page_dict = {}
@@ -59,7 +58,7 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
             page_dict["article_url"] = page["data"]["url"]
             page_dict["article_domain"] = page["data"]["domain"]
             pages_list.append(page_dict)
-        except AttributeError:
+        except KeyError:
             print("Missing attribute. Skipping entry.")
     return pages_list
 

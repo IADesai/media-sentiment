@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from conftest import FakeGet, FakePost
-from extract import get_subreddit_json, get_reddit_access_token
+from conftest import FakeGet, FakePost, fake_subreddit_json
+from extract import get_subreddit_json, get_reddit_access_token, create_pages_list
 
 
 @patch("requests.get")
@@ -66,3 +66,18 @@ def test_200_status_code_returns_string_access_token(fake_get):
     res = get_reddit_access_token(configuration)
 
     assert isinstance(res, str)
+
+
+def test_pages_list_returns_correct_type(fake_subreddit_json):
+    """Tests a list of dictionaries is returned by create_pages_list()."""
+    res = create_pages_list(fake_subreddit_json)
+
+    assert isinstance(res, list)
+    assert isinstance(res[0], dict)
+
+
+def test_pages_list_skips_missing_data(fake_subreddit_json_missing_entries):
+    """Tests entries missing keys are not returned by create_pages_list()."""
+    res = create_pages_list(fake_subreddit_json_missing_entries)
+
+    assert len(res) == 2
