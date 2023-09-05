@@ -8,7 +8,7 @@ from re import match
 import pytest
 
 from conftest import FakeGet, FakePost
-from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename
+from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename, get_json_from_request
 
 
 @patch("requests.get")
@@ -107,3 +107,26 @@ def test_file_date_format_correct():
     res = create_json_filename(reddit_title)
 
     assert match(r"\d{4}_\d{2}_\d{2}-\d{2}_\d{2}-\.json", res)
+
+
+@patch("requests.get")
+def test_json_returned_from_successful_request(fake_get):
+    subreddit_url = "www.reddit.com"
+    reddit_access_token = "12345"
+    fake_get.return_value = FakeGet()
+
+    res = get_json_from_request(subreddit_url, reddit_access_token)
+
+    assert isinstance(res, dict)
+
+
+@patch("requests.get")
+def test_connection_error_raised_successful_request(fake_get):
+    subreddit_url = "www.reddit.com"
+    reddit_access_token = "12345"
+    fake_request = FakeGet()
+    fake_request.status_code = 500
+    fake_get.return_value = fake_request
+
+    with pytest.raises(ConnectionError):
+        get_json_from_request(subreddit_url, reddit_access_token)
