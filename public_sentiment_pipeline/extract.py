@@ -13,6 +13,11 @@ REDDIT_URL = "https://oauth.reddit.com/r/"
 SUBREDDIT_URL = "https://oauth.reddit.com/"
 REDDIT_ACCESS_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
 
+REDDIT_TITLE_KEY = "title"
+REDDIT_SUBREDDIT_URL = "subreddit_url"
+REDDIT_ARTICLE_URL = "article_url"
+REDDIT_ARTICLE_DOMAIN = "article_domain"
+
 
 def get_reddit_access_token(config: dict) -> dict:
     """Obtains the access token dictionary from Reddit using a POST request."""
@@ -53,10 +58,10 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
     for page in reddit_json["data"]["children"]:
         try:
             page_dict = {}
-            page_dict["title"] = page["data"]["title"]
-            page_dict["subreddit_url"] = page["data"]["permalink"]
-            page_dict["article_url"] = page["data"]["url"]
-            page_dict["article_domain"] = page["data"]["domain"]
+            page_dict[REDDIT_TITLE_KEY] = page["data"]["title"]
+            page_dict[REDDIT_SUBREDDIT_URL] = page["data"]["permalink"]
+            page_dict[REDDIT_ARTICLE_URL] = page["data"]["url"]
+            page_dict[REDDIT_ARTICLE_DOMAIN] = page["data"]["domain"]
             pages_list.append(page_dict)
         except KeyError:
             print("Missing attribute. Skipping entry.")
@@ -134,9 +139,9 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
     response_list = []
     for page in pages_list:
         try:
-            json_filename = create_json_filename(page["title"])
+            json_filename = create_json_filename(page[REDDIT_TITLE_KEY])
             page_json = get_json_from_request(
-                SUBREDDIT_URL+page["subreddit_url"], reddit_access_token)
+                SUBREDDIT_URL+page[REDDIT_SUBREDDIT_URL], reddit_access_token)
             save_json_to_file(page_json, json_filename)
             upload_json_s3(config, json_filename)
             page["comments"] = get_comments_list(json_filename)
