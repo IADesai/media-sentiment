@@ -152,7 +152,7 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
     return response_list
 
 
-def run_extract() -> list[dict]:
+def run_extract() -> list[dict]:  # pragma: no cover
     """Returns a list of dictionaries for each page in a subreddit."""
     configuration = dotenv_values()
     reddit_token = get_reddit_access_token(configuration)
