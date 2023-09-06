@@ -12,10 +12,10 @@ pip3 install -r requirements.txt
 
 ## Run the code
 
-Run the extract script.
+Run the pipeline script.
 
 ```sh
-python3 extract.py
+python3 load.py
 ```
 
 ## Required environment variables
@@ -35,3 +35,7 @@ The following environment variables must be supplied in a .env file in order to 
 - `DATABASE_ENDPOINT`
 - `DATABASE_PASSWORD`
 - `DATABASE_PORT`
+
+## Archiving
+
+JSON files fetched from Reddit for each page are archived in an S3 bucket. They are named after the time they are created followed by the title.
