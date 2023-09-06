@@ -38,6 +38,11 @@ CREATE TABLE reddit_article(
     re_sentiment_mean FLOAT,
     re_sentiment_st_dev FLOAT,
     re_sentiment_median FLOAT,
+    re_vote_score INT,
+    re_upvote_ratio FLOAT,
+    re_post_comments INT,
+    re_processed_comments INT,
+    re_created_timestamp TIMESTAMP,
     PRIMARY KEY (re_article_id)
 );
 
