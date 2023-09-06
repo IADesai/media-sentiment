@@ -3,5 +3,5 @@ pandas
 python-dotenv
 pylint
 pytest
-openapi
+openai
 requests

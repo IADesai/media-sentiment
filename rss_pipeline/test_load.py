@@ -1,6 +1,8 @@
+"""Contains unit tests for load.py to be run with pytest"""
 # pylint: skip-file
+
 from unittest.mock import MagicMock, patch
-from load import *
+from load import extract_source_from_url, get_source_id
 
 
 def test_extract_source_from_url_returns_valid_source_for_bbc():
