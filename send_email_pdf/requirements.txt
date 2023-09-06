@@ -1,2 +1,9 @@
 pylint
 pytest
+plotly
+matplotlib
+psycopg2
+python-dotenv
+pandas
+kaleido
+xhtml2pdf
