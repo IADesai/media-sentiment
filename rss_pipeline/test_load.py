@@ -1,6 +1,4 @@
 from unittest.mock import MagicMock, patch
-import pytest
-
 from load import *
 
 
@@ -45,11 +43,3 @@ def test_get_source_id_returns_None_if_source_not_found(fake_invalid_source_url)
     fake_fetch.return_value = None
     result = get_source_id(fake_connection, fake_invalid_source_url)
     assert result == None
-
-
-# def test_insert_articles_table_calls_appropriate_functions(fake_dataframe):
-#     fake_connection = MagicMock()
-#     fake_get_source_id = MagicMock()
-#     fake_execute = fake_get_source_id.cursor().__enter__().execute
-#     result = insert_articles_into_rds(fake_connection, fake_dataframe)
-#     assert fake_execute.call_count == 1
