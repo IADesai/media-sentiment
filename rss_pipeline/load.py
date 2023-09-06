@@ -5,7 +5,7 @@ from os import environ
 from dotenv import load_dotenv
 import pandas as pd
 import psycopg2
-from psycopg2 import errors, extras, extensions
+from psycopg2 import extras
 
 TITLE = 'title'
 DESCRIPTION = 'description'
@@ -42,7 +42,7 @@ def extract_source_from_url(url: str) -> str | None:
     return None
 
 
-def get_source_id(conn: psycopg2.extensions.connection, url: str) -> str | None:
+def get_source_id(conn: psycopg2.extensions.connection, url: str) -> int | None:
     """Queries RDS to find source_id of the provided source"""
     source = extract_source_from_url(url)
     if source:
@@ -51,38 +51,42 @@ def get_source_id(conn: psycopg2.extensions.connection, url: str) -> str | None:
                 cur.execute(
                     "SELECT source_id FROM sources WHERE source_name = (%s);", [source])
                 source_id_dict = cur.fetchone()
-                return source_id_dict['source_id']
+                return source_id_dict['source_id'] if source_id_dict else None
         except psycopg2.DatabaseError:
             print('Error retrieving source id from database', url)
     return None
 
 
-def populate_sources_table(conn: psycopg2.extensions.connection, dataframe: pd.DataFrame) -> None:
-    """Inserts data into the stories table of the RDS"""
+def insert_articles_into_rds(conn: psycopg2.extensions.connection, dataframe: pd.DataFrame) -> None:
+    """Iterates through each article in the dataframe to be inserted into the RDS"""
     for row in dataframe.iterrows():
         article = row[1]
-        url = article.get(URL)
-        source_id = get_source_id(conn, url)
+        source_id = get_source_id(conn, article.get(URL))
         if source_id:
-            try:
-                with conn.cursor() as cur:
-                    values = (source_id, article[TITLE], article[DESCRIPTION],
-                              article[URL], article[PUBDATE], article[SENTIMENT])
-                    cur.execute(
-                        "INSERT INTO stories "
-                        "(source_id, title, description, url, pub_date, media_sentiment) "
-                        "VALUES (%s,%s,%s,%s,%s,%s)", values)
-                    conn.commit()
+            populate_stories_table(conn, source_id, article)
 
-            except psycopg2.errors.UniqueViolation:
-                # placeholder but we can discuss how to address dupes (maybe replace original?)
-                print('Duplicate data found:', url)
-                conn.rollback()
+
+def populate_stories_table(conn: psycopg2.extensions.connection, source_id: int, article: dict) -> None:
+    """Inserts data into the stories table of the RDS"""
+    try:
+        with conn.cursor() as cur:
+            values = (source_id, article[TITLE], article[DESCRIPTION],
+                      article[URL], article[PUBDATE], article[SENTIMENT])
+            cur.execute(
+                "INSERT INTO stories "
+                "(source_id, title, description, url, pub_date, media_sentiment) "
+                "VALUES (%s,%s,%s,%s,%s,%s)", values)
+            conn.commit()
+
+    except psycopg2.errors.UniqueViolation:
+        # placeholder but we can discuss how to address dupes (maybe replace original?)
+        print('Duplicate data found:', article.get(URL))
+        conn.rollback()
 
 
 if __name__ == "__main__":
     load_dotenv()
     conn = db_connection()
-    df = create_dataframe('bbc_uk_news.csv')
-    populate_sources_table(conn, df)
+    df = create_dataframe('bbc_uk_news_new.csv')
+    insert_articles_into_rds(conn, df)
     conn.close()

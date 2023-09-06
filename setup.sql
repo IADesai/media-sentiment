@@ -35,7 +35,9 @@ CREATE TABLE reddit_article(
     re_title TEXT,
     re_article_url TEXT,
     re_url TEXT UNIQUE,
-    public_sentiment FLOAT,
+    re_sentiment_mean FLOAT,
+    re_sentiment_st_dev FLOAT,
+    re_sentiment_median FLOAT,
     PRIMARY KEY (re_article_id)
 );
 
