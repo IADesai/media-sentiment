@@ -2,6 +2,7 @@
 
 import sys
 import time
+import os
 
 from dotenv import dotenv_values
 from psycopg2 import connect
@@ -29,8 +30,8 @@ def establish_database_connection(config: dict):  # pragma: no cover
         return connect(
             user=config['DATABASE_USERNAME'],
             password=config['DATABASE_PASSWORD'],
-            host=config['DATABASE_ENDPOINT'],
-            port=config['DATABASE_PORT'],
+            host=config['DATABASE_IP'],
+            port=5432,
             database=config['DATABASE_NAME'])
     except ValueError as err:
         print("Error connecting to database: ", err)
@@ -124,7 +125,7 @@ def load_each_row_into_database(conn, page_response_list: list[dict]) -> None:
 
 
 if __name__ == "__main__":  # pragma: no cover
-    configuration = dotenv_values()
+    configuration = os.environ
     list_of_page_dict = run_transform()
     start = time.time()
     connection = establish_database_connection(configuration)
