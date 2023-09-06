@@ -1,4 +1,4 @@
-"""Contains the functions required to calculate the average sentiment score from a page on Reddit."""
+"""Calculates the sentiment scores from the comments on a Reddit page."""
 
 import statistics
 import time
@@ -31,7 +31,7 @@ def calculate_sentiment_for_each_comment(comments: list[str]) -> list[float]:
 
 
 def calculate_sentiment_statistics(comments: list[str]) -> tuple[float]:
-    """Calculates the mean, median and standard deviation of the sentiment from a list of comments."""
+    """Calculates the sentiment scores from a list of comments."""
     scores = calculate_sentiment_for_each_comment(comments)
     if len(scores) > 0:
         mean_sentiment = statistics.mean(scores)

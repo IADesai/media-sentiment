@@ -2,6 +2,8 @@
 
 Unit tests are designed to be run with pytest."""
 
+# pylint: skip-file
+
 from unittest.mock import patch
 
 import pytest

@@ -1,5 +1,7 @@
 """Contains useful properties for the unit tests"""
 
+# pylint: skip-file
+
 import pytest
 
 
