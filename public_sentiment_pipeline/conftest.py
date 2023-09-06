@@ -127,3 +127,8 @@ def fake_json_content_2():
             '                        "can_gild": true,',
             '                        "body": "**Removed/warning**",',
             '                        "collapsed": false,']
+
+
+@pytest.fixture
+def fake_page_response_list():
+    return [{"title": "a", "subreddit_url": "b", "article_url": "c", "article_domain": "d", "comments": ["a", "b"]}, {"title": "e", "subreddit_url": "f", "article_url": "g", "article_domain": "h", "comments": ["c", "d"]}]

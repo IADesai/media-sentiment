@@ -21,15 +21,20 @@ def calculate_sentiment_score(text: str) -> float:
     return sentiment_score
 
 
-def calculate_sentiment_statistics(comments: list[str]) -> tuple[float]:
-    """Calculates the mean, median and standard deviation of the sentiment from a list of comments."""
+def calculate_sentiment_for_each_comment(comments: list[str]) -> list[float]:
+    """Returns a list with the sentiment score for each comment."""
     scores = []
     for comment in comments:
         scores.append(calculate_sentiment_score(comment))
+    return scores
 
+
+def calculate_sentiment_statistics(comments: list[str]) -> tuple[float]:
+    """Calculates the mean, median and standard deviation of the sentiment from a list of comments."""
+    scores = calculate_sentiment_for_each_comment(comments)
     if len(scores) > 0:
         mean_sentiment = statistics.mean(scores)
-        st_dev_sentiment = statistics.stdev(scores)
+        st_dev_sentiment = statistics.pstdev(scores)
         median_sentiment = statistics.median(scores)
     else:
         mean_sentiment = None
