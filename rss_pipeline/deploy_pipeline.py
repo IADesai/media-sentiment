@@ -1,6 +1,7 @@
 """This script runs the full RSS pipeline"""
 import pandas as pd
 from dotenv import load_dotenv
+import nltk
 
 from extract_rss import download_bbc_uk_news_xml, download_daily_mail_uk_news_xml
 from transform_rss import transform_bbc_xml_file, transform_daily_mail_xml_file
@@ -37,6 +38,7 @@ def transform_xml_files() -> list[pd.DataFrame]:
 if __name__ == "__main__":
     load_dotenv()
     conn = db_connection()
+    nltk.download('vader_lexicon')
 
     extract_xml_files_from_rss()
     news_df_list = transform_xml_files()
