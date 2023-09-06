@@ -1,0 +1,9 @@
+pytest
+pytest-cov
+pylint
+requests
+psycopg2-binary
+python-dotenv
+pandas
+boto3
+pytz
