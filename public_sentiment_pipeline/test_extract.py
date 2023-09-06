@@ -210,8 +210,8 @@ def test_list_returned_by_process_reddit_page(fake_comments_list, fake_upload, f
         pages_list, reddit_access_token, configuration)
 
     assert isinstance(res, list)
-    assert res == [{"title": "a", "subreddit_url": "r/a", "comments": ["Comment 1", "Comment 2"]}, {"title": "b",
-                                                                                                    "subreddit_url": "r/b", "comments": ["Comment 1", "Comment 2"]}, {"title": "c", "subreddit_url": "r/c", "comments": ["Comment 1", "Comment 2"]}]
+    assert res == [{"title": "a", "subreddit_url": "r/a", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}, {"title": "b",
+                                                                                                                                 "subreddit_url": "r/b", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}, {"title": "c", "subreddit_url": "r/c", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}]
 
 
 @patch("extract.create_json_filename")

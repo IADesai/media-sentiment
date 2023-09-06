@@ -12,6 +12,11 @@ REDDIT_TITLE_KEY = "title"
 REDDIT_SUBREDDIT_URL = "subreddit_url"
 REDDIT_ARTICLE_URL = "article_url"
 REDDIT_ARTICLE_DOMAIN = "article_domain"
+REDDIT_ARTICLE_SCORE = "score"
+REDDIT_UPVOTE_RATIO = "upvote_ratio"
+REDDIT_POST_COMMENTS = "comment_count"
+REDDIT_INCLUDED_COMMENTS = "included_comment_count"
+REDDIT_CREATED_UTC = "creation_timestamp"
 REDDIT_COMMENTS = "comments"
 REDDIT_SENTIMENT_MEAN = "mean_sentiment"
 REDDIT_SENTIMENT_ST_DEV = "st_dev_sentiment"
@@ -41,14 +46,20 @@ def insert_row_into_reddit_article(conn, page: dict) -> None:  # pragma: no cove
     re_sentiment_mean = page[REDDIT_SENTIMENT_MEAN]
     re_sentiment_st_dev = page[REDDIT_SENTIMENT_ST_DEV]
     re_sentiment_median = page[REDDIT_SENTIMENT_MEDIAN]
-
+    re_vote_score = page[REDDIT_ARTICLE_SCORE]
+    re_upvote_ratio = page[REDDIT_UPVOTE_RATIO]
+    re_post_comments = page[REDDIT_POST_COMMENTS]
+    re_processed_comments = page[REDDIT_INCLUDED_COMMENTS]
+    re_created_timestamp = page[REDDIT_CREATED_UTC]
     with conn.cursor() as cur:
         cur.execute("""
             INSERT INTO reddit_article (re_domain, re_title, re_article_url, re_url, 
-                    re_sentiment_mean, re_sentiment_st_dev, re_sentiment_median)
+                    re_sentiment_mean, re_sentiment_st_dev, re_sentiment_median, re_vote_score,
+                    re_upvote_ratio, re_post_comments, re_processed_comments, re_created_timestamp)
             VALUES (%s, %s, %s, %s, %s, %s, %s);""",
                     (re_domain, re_title, re_article_url, re_url, re_sentiment_mean,
-                     re_sentiment_st_dev, re_sentiment_median))
+                     re_sentiment_st_dev, re_sentiment_median, re_vote_score, re_upvote_ratio,
+                     re_post_comments, re_processed_comments, re_created_timestamp))
         conn.commit()
 
 

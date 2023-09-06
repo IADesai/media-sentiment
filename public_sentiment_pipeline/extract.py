@@ -17,6 +17,11 @@ REDDIT_TITLE_KEY = "title"
 REDDIT_SUBREDDIT_URL = "subreddit_url"
 REDDIT_ARTICLE_URL = "article_url"
 REDDIT_ARTICLE_DOMAIN = "article_domain"
+REDDIT_ARTICLE_SCORE = "score"
+REDDIT_UPVOTE_RATIO = "upvote_ratio"
+REDDIT_POST_COMMENTS = "comment_count"
+REDDIT_INCLUDED_COMMENTS = "included_comment_count"
+REDDIT_CREATED_UTC = "creation_timestamp"
 REDDIT_COMMENTS = "comments"
 
 
@@ -63,6 +68,11 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
             page_dict[REDDIT_SUBREDDIT_URL] = page["data"]["permalink"]
             page_dict[REDDIT_ARTICLE_URL] = page["data"]["url"]
             page_dict[REDDIT_ARTICLE_DOMAIN] = page["data"]["domain"]
+            page_dict[REDDIT_ARTICLE_SCORE] = page["data"]["score"]
+            page_dict[REDDIT_UPVOTE_RATIO] = page["data"]["upvote_ratio"]
+            page_dict[REDDIT_POST_COMMENTS] = page["data"]["num_comments"]
+            page_dict[REDDIT_CREATED_UTC] = datetime.strftime(
+                datetime.fromtimestamp(page["data"]["created_utc"]), "%Y-%m%d %H:%M%S")
             pages_list.append(page_dict)
         except KeyError:
             print("Missing attribute. Skipping entry.")
@@ -146,6 +156,7 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
             save_json_to_file(page_json, json_filename)
             upload_json_s3(config, json_filename)
             page[REDDIT_COMMENTS] = get_comments_list(json_filename)
+            page[REDDIT_INCLUDED_COMMENTS] = len(page[REDDIT_COMMENTS])
             response_list.append(page)
         except (ConnectionError, AttributeError) as err:
             print(err)
