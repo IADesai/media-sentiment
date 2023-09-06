@@ -61,14 +61,14 @@ def run_transform() -> list[dict]:  # pragma: no cover
     list_of_page_dict = run_extract()
     print(f"Time to run extract: {(time.time()-start):.2f} seconds.")
     start = time.time()
-    nltk.download('vader_lexicon')
+    nltk.download("vader_lexicon")
     list_of_page_dict = add_sentiment_to_page_dict(list_of_page_dict)
     print(f"Time to run transform: {(time.time()-start):.2f} seconds.")
     return list_of_page_dict
 
 
 if __name__ == "__main__":  # pragma: no cover
-    nltk.download('vader_lexicon')
+    nltk.download("vader_lexicon")
 
     list_of_page_dict = run_extract()
 
