@@ -9,12 +9,12 @@ BBC_UK_NEWS_XML_FILE_NAME = "bbc_uk_news.xml"
 DAILY_MAIL_UK_NEWS_XML_FILE_NAME = "daily_mail_uk_news.xml"
 
 
-def download_bbc_uk_news_xml():
+def download_bbc_uk_news_xml(bbc_uk_news_rss_link, bbc_uk_news_xml_file_name):
     """Downloads the latest UK news from the BBC website """
     try:
-        response = requests.get(BBC_UK_NEWS_RSS_LINK, timeout=10)
+        response = requests.get(bbc_uk_news_rss_link, timeout=10)
         if response.status_code == 200:
-            with open(BBC_UK_NEWS_XML_FILE_NAME, "wb") as file:
+            with open(bbc_uk_news_xml_file_name, "wb") as file:
                 file.write(response.content)
             print("BBC UK news XML downloaded successfully.")
         else:
@@ -24,12 +24,12 @@ def download_bbc_uk_news_xml():
         print(f"An error occurred: {str(exc)}")
 
 
-def download_daily_mail_uk_news_xml():
+def download_daily_mail_uk_news_xml(daily_mail_uk_news_rss_link, daily_mail_uk_news_xml_file_name):
     """Downloads the latest news from the Daily Mail website """
     try:
-        response = requests.get(DAILY_MAIL_UK_NEWS_RSS_LINK, timeout=10)
+        response = requests.get(daily_mail_uk_news_rss_link, timeout=10)
         if response.status_code == 200:
-            with open(DAILY_MAIL_UK_NEWS_XML_FILE_NAME, "wb") as file:
+            with open(daily_mail_uk_news_xml_file_name, "wb") as file:
                 file.write(response.content)
             print("Daily Mail UK news XML downloaded successfully.")
         else:
@@ -40,5 +40,6 @@ def download_daily_mail_uk_news_xml():
 
 
 if __name__ == "__main__":
-    download_bbc_uk_news_xml()
-    download_daily_mail_uk_news_xml()
+    download_bbc_uk_news_xml(BBC_UK_NEWS_RSS_LINK, BBC_UK_NEWS_XML_FILE_NAME)
+    download_daily_mail_uk_news_xml(
+        DAILY_MAIL_UK_NEWS_RSS_LINK, DAILY_MAIL_UK_NEWS_XML_FILE_NAME)

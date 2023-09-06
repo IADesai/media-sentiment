@@ -1,11 +1,16 @@
-"""This script converts the XML to dataframes and cleans them"""
+"""
+This script converts the XML to dataframes and cleans them 
+as well as applying sentiment analysis
+"""
 
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import pandas as pd
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from nltk.tokenize import word_tokenize
+import requests
+from bs4 import BeautifulSoup
+
 
 BBC_UK_NEWS_XML_FILE_NAME = "bbc_uk_news.xml"
 DAILY_MAIL_UK_NEWS_XML_FILE_NAME = "daily_mail_uk_news.xml"
@@ -91,6 +96,46 @@ def remove_headline_tags(headline: str) -> str:
     return updated_headline
 
 
+def get_bbc_full_article_text(url: str) -> str:
+    """Uses BeautifulSoup to extract the full article from the URL"""
+    html = requests.get(url, timeout=10)
+    bsobj = BeautifulSoup(html.content, "lxml")
+
+    bbc_jargon = ["This video can not be played"]
+
+    article_contents_list = []
+    for link in bsobj.find_all("p"):
+        if "Paragraph" in str(link):
+            article_contents_list.append(link.get_text())
+
+    for element in bbc_jargon:
+        while element in article_contents_list:
+            article_contents_list.remove(element)
+
+    if len(article_contents_list) >= 4:
+        article_contents_list = article_contents_list[:-4]
+
+    if len(article_contents_list) != 0:
+        return " ".join(article_contents_list)
+
+    return ""
+
+
+def get_daily_mail_full_article_text(url: str) -> str:
+    """Uses BeautifulSoup to extract the full article from the URL"""
+    response = requests.get(url, timeout=10)
+
+    html = BeautifulSoup(response.text, 'html.parser')
+
+    # Find the tag with the article body
+    article_body = html.find('div', itemprop='articleBody')
+
+    if article_body:
+        article_content = article_body.get_text()
+        return article_content
+    return ""
+
+
 def get_sentiment_score(article_text: str) -> float:
     """Returns the sentiment score using VADER"""
     vader = SentimentIntensityAnalyzer()
@@ -99,25 +144,45 @@ def get_sentiment_score(article_text: str) -> float:
     return sentiment_score
 
 
+def transform_bbc_xml_file(bbc_xml_file) -> pd.DataFrame:
+    """Converts the BBC XML file to a dataframe and cleans it"""
+    bbc_articles_df = extract_info_from_bbc_articles(bbc_xml_file)
+
+    bbc_articles_df['pubdate'] = bbc_articles_df['pubdate'].apply(
+        convert_pubdate_to_timestamp)
+    bbc_articles_df['title'] = bbc_articles_df['title'].apply(
+        remove_headline_tags)
+
+    bbc_articles_df['sentiment_score'] = bbc_articles_df.apply(lambda row: get_sentiment_score(
+        row['title'] + ' ' + row['description'] + ' ' +
+        get_bbc_full_article_text(row['url'])), axis=1)
+
+    return bbc_articles_df
+
+
+def transform_daily_mail_xml_file(daily_mail_xml_file) -> pd.DataFrame:
+    """Converts the Daily Mail XML file to a dataframe and cleans it"""
+    daily_mail_articles_df = extract_info_from_daily_mail_articles(
+        daily_mail_xml_file)
+
+    daily_mail_articles_df['pubdate'] = daily_mail_articles_df['pubdate'].apply(
+        convert_pubdate_to_timestamp)
+    daily_mail_articles_df['title'] = daily_mail_articles_df['title'].apply(
+        remove_headline_tags)
+
+    daily_mail_articles_df['sentiment_score'] = daily_mail_articles_df.apply(lambda row: get_sentiment_score(
+        row['title'] + ' ' + row['description'] + ' ' + get_daily_mail_full_article_text(row['url'])), axis=1)
+
+    return daily_mail_articles_df
+
+
 if __name__ == "__main__":
 
     nltk.download('vader_lexicon')
 
-    # Extract info and put in dataframe
-    bbc_articles_df = extract_info_from_bbc_articles(BBC_UK_NEWS_XML_FILE_NAME)
-    daily_mail_df = extract_info_from_daily_mail_articles(
+    bbc_articles_df = transform_bbc_xml_file(BBC_UK_NEWS_XML_FILE_NAME)
+    daily_mail_articles_df = transform_daily_mail_xml_file(
         DAILY_MAIL_UK_NEWS_XML_FILE_NAME)
 
-    list_of_news_dfs = [bbc_articles_df, daily_mail_df]
-
-    for news_df in list_of_news_dfs:
-        news_df['pubdate'] = news_df['pubdate'].apply(
-            convert_pubdate_to_timestamp)
-        news_df['title'] = news_df['title'].apply(
-            remove_headline_tags)
-        news_df['sentiment_score'] = news_df.apply(lambda row: get_sentiment_score(
-            row['title'] + ' ' + row['description']), axis=1)
-
-    # Save to CSV
+    daily_mail_articles_df.to_csv(DAILY_MAIL_UK_NEWS_CSV_FILENAME)
     bbc_articles_df.to_csv(BBC_UK_NEWS_CSV_FILENAME)
-    daily_mail_df.to_csv(DAILY_MAIL_UK_NEWS_CSV_FILENAME)
