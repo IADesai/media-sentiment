@@ -1,4 +1,6 @@
+beautifulsoup4
 lxml==4.9.3
+nltk
 psycopg2-binary
 pandas
 python-dotenv
