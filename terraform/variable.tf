@@ -45,3 +45,27 @@ variable "email" {
 variable "bucket_name" {
   description = "Name of s3 bucket to pull info from"
 }
+
+variable "reddit_topic" {
+  description = "Topic of the reddit page we are investigating"
+}
+
+variable "reddit_json_bucket_name" {
+  description = "Name of bucket that reddit json will go to"
+}
+
+variable "reddit_client_secret" {
+  description = "Reddit clients secret"
+}
+
+variable "reddit_secret_key" {
+  description = "Secret key used to access reddit"
+}
+
+variable "reddit_username" {
+  description = "Username for reddit"
+}
+
+variable "reddit_password" {
+  description = "Password for reddit"
+}

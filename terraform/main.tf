@@ -282,7 +282,32 @@ resource "aws_ecs_task_definition" "media-sentiment-public-sentiment-ecs" {
         {
           "name" : "DATABASE_PASSWORD",
           "value" : var.database_password
-      }]
+        },
+        {
+          "name" : "REDDIT_TOPIC",
+          "value" : var.reddit_topic
+        },
+        {
+          "name" : "REDDIT_JSON_BUCKET_NAME",
+          "value" : var.reddit_json_bucket_name
+        },
+        {
+          "name" : "REDDIT_CLIENT_SECRET",
+          "value" : var.reddit_client_secret
+        },
+        {
+          "name" : "REDDIT_SECRET_KEY",
+          "value" : var.reddit_secret_key
+        },
+        {
+          "name" : "REDDIT_USERNAME",
+          "value" : var.reddit_username
+        },
+        {
+          "name" : "REDDIT_PASSWORD",
+          "value" : var.reddit_password
+        }
+      ]
     }
   ])
 }
