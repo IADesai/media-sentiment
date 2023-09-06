@@ -13,6 +13,7 @@ from transform import calculate_sentiment_score, calculate_sentiment_for_each_co
 
 @pytest.fixture(scope="session", autouse=True)
 def download_nltk():
+    """Download the required library before running the unit tests."""
     nltk.download("vader_lexicon")
 
 
