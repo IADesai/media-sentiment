@@ -1,3 +1,4 @@
+# pylint: skip-file
 from unittest.mock import MagicMock, patch
 from load import *
 
