@@ -17,6 +17,7 @@ REDDIT_TITLE_KEY = "title"
 REDDIT_SUBREDDIT_URL = "subreddit_url"
 REDDIT_ARTICLE_URL = "article_url"
 REDDIT_ARTICLE_DOMAIN = "article_domain"
+REDDIT_COMMENTS = "comments"
 
 
 def get_reddit_access_token(config: dict) -> dict:
@@ -144,7 +145,7 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
                 SUBREDDIT_URL+page[REDDIT_SUBREDDIT_URL], reddit_access_token)
             save_json_to_file(page_json, json_filename)
             upload_json_s3(config, json_filename)
-            page["comments"] = get_comments_list(json_filename)
+            page[REDDIT_COMMENTS] = get_comments_list(json_filename)
             response_list.append(page)
         except (ConnectionError, AttributeError) as err:
             print(err)

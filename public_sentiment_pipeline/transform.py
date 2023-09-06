@@ -1,16 +1,17 @@
 """Contains the functions required to calculate the average sentiment score from a page on Reddit."""
 
 import statistics
+import time
 
-from dotenv import dotenv_values
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from nltk.tokenize import word_tokenize
 
-from extract import save_json_to_file
+from extract import run_extract, save_json_to_file
 
-
-from extract import run_extract
+REDDIT_COMMENTS = "comments"
+REDDIT_SENTIMENT_MEAN = "mean_sentiment"
+REDDIT_SENTIMENT_ST_DEV = "st_dev_sentiment"
+REDDIT_SENTIMENT_MEDIAN = "median_sentiment"
 
 
 def calculate_sentiment_score(text: str) -> float:
@@ -47,19 +48,29 @@ def add_sentiment_to_page_dict(page_response_list: list[dict]) -> list[dict]:
     """Adds the sentiment values to the dictionary for each page."""
     for page in page_response_list:
         mean_sentiment, st_dev_sentiment, median_sentiment = calculate_sentiment_statistics(
-            page["comments"])
-        page["mean_sentiment"] = mean_sentiment
-        page["st_dev_sentiment"] = st_dev_sentiment
-        page["median_sentiment"] = median_sentiment
+            page[REDDIT_COMMENTS])
+        page[REDDIT_SENTIMENT_MEAN] = mean_sentiment
+        page[REDDIT_SENTIMENT_ST_DEV] = st_dev_sentiment
+        page[REDDIT_SENTIMENT_MEDIAN] = median_sentiment
     return page_response_list
 
 
+def run_transform() -> list[dict]:  # pragma: no cover
+    """Returns a list of dictionaries for each Reddit page with sentiment scores."""
+    start = time.time()
+    list_of_page_dict = run_extract()
+    print(f"Time to run extract: {(time.time()-start):.2f} seconds.")
+    start = time.time()
+    nltk.download('vader_lexicon')
+    list_of_page_dict = add_sentiment_to_page_dict(list_of_page_dict)
+    print(f"Time to run transform: {(time.time()-start):.2f} seconds.")
+    return list_of_page_dict
+
+
 if __name__ == "__main__":  # pragma: no cover
-    configuration = dotenv_values()
+    nltk.download('vader_lexicon')
 
     list_of_page_dict = run_extract()
-
-    nltk.download('vader_lexicon')
 
     list_of_page_dict = add_sentiment_to_page_dict(list_of_page_dict)
     print(list_of_page_dict)

@@ -30,3 +30,8 @@ The following environment variables must be supplied in a .env file in order to 
 - `REDDIT_SECRET_KEY`
 - `REDDIT_USERNAME`
 - `REDDIT_PASSWORD`
+- `DATABASE_NAME`
+- `DATABASE_USERNAME`
+- `DATABASE_ENDPOINT`
+- `DATABASE_PASSWORD`
+- `DATABASE_PORT`
