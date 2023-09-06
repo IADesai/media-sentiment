@@ -553,26 +553,9 @@ resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
   definition = <<EOF
 {
   "Comment": "State machine that runs the article sentiment ECS, public sentiment ECS, and email lambda",
-  "StartAt": "ECS RunTask",
+  "StartAt": "reddit-ecs",
   "States": {
-    "ECS RunTask": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::ecs:runTask.sync",
-      "Parameters": {
-        "LaunchType": "FARGATE",
-        "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
-        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-article-sentiment-ecs",
-        "NetworkConfiguration": {
-      "AwsvpcConfiguration": {
-         "AssignPublicIp": "ENABLED",
-         "SecurityGroups": ["sg-0ac19c4c6eb7d1ca3"],
-         "Subnets": ["subnet-03b1a3e1075174995", "subnet-0cec5bdb9586ed3c4","subnet-0667517a2a13e2a6b"]
-      }
-      }
-      },
-      "Next": "ECS RunTask (1)"
-    },
-    "ECS RunTask (1)": {
+    "reddit-ecs": {
       "Type": "Task",
       "Resource": "arn:aws:states:::ecs:runTask.sync",
       "Parameters": {
@@ -587,9 +570,26 @@ resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
       }
       }
       },
-      "Next": "Lambda Invoke"
+      "Next": "tagging-ecs"
     },
-    "Lambda Invoke": {
+    "tagging-ecs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
+        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-article-sentiment-ecs",
+        "NetworkConfiguration": {
+      "AwsvpcConfiguration": {
+         "AssignPublicIp": "ENABLED",
+         "SecurityGroups": ["sg-0ac19c4c6eb7d1ca3"],
+         "Subnets": ["subnet-03b1a3e1075174995", "subnet-0cec5bdb9586ed3c4","subnet-0667517a2a13e2a6b"]
+      }
+      }
+      },
+      "Next": "Email Lambda Invoke"
+    },
+    "Email Lambda Invoke": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "OutputPath": "$.Payload",
