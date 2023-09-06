@@ -32,8 +32,8 @@ def create_report(db_connection: connection) -> str:
     img_bytes = px.scatter([1, 2, 3], [4, 5, 6]).to_image()
     img = base64.b64encode(img_bytes).decode("utf-8")
     template = f'''
-    <h1>TMNT</h1>
-    <p>Example!</p>
+    <h1>Media Sentiment</h1>
+    <p>Latest report</p>
     <img style="width: 400; height: 600" src="data:image/png;base64,{img}">
     '''
     return template
@@ -41,6 +41,10 @@ def create_report(db_connection: connection) -> str:
 def convert_html_to_pdf(html_template: str, file: str) -> None:
     """Converts the HTML template provided into a pdf report file"""
     # open output file for writing (truncated binary)
+    if not isinstance(html_template, str):
+        raise ValueError("The HTML template should be provided as a string")
+    if not isinstance(file, str):
+        raise ValueError("The file name should be provided as a string")
     result_file = open(file, "w+b")
 
     # convert HTML to PDF
