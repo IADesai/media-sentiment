@@ -72,7 +72,7 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
             page_dict[REDDIT_UPVOTE_RATIO] = page["data"]["upvote_ratio"]
             page_dict[REDDIT_POST_COMMENTS] = page["data"]["num_comments"]
             page_dict[REDDIT_CREATED_UTC] = datetime.strftime(
-                datetime.fromtimestamp(page["data"]["created_utc"]), "%Y-%m%d %H:%M%S")
+                datetime.fromtimestamp(page["data"]["created_utc"]), "%Y-%m-%d %H:%M:%S")
             pages_list.append(page_dict)
         except KeyError:
             print("Missing attribute. Skipping entry.")
