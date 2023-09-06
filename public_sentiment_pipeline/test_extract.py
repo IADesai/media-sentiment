@@ -7,7 +7,7 @@ from re import match
 
 import pytest
 
-from conftest import FakeGet, FakePost
+from reddit_conftest import FakeGet, FakePost, fake_subreddit_json, fake_subreddit_json_missing_entries, fake_json_content_1, fake_json_content_2
 from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename, get_json_from_request, get_comments_list, process_each_reddit_page
 
 

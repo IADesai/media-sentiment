@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
+from reddit_conftest import fake_page_response_list
 from transform import calculate_sentiment_score, calculate_sentiment_for_each_comment, calculate_sentiment_statistics, add_sentiment_to_page_dict
 
 
