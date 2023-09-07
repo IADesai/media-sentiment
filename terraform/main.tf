@@ -435,23 +435,19 @@ resource "aws_s3_bucket" "media-sentiment-reddit-json-short-term" {
   bucket = "media-sentiment-reddit-json-short-term"
 }
 
-# resource "aws_s3_bucket_lifecycle_configuration" "media-sentiment-reddit-json-long-term" {
-#   rule {
-#     id      = "media-sentiment-reddit-json-long-term-rule"
-#     status  = "Enabled"
+resource "aws_s3_bucket_lifecycle_configuration" "media-sentiment-reddit-json-long-term" {
+  rule {
+    id      = "media-sentiment-reddit-json-long-term-rule"
+    status  = "Enabled"
 
-#     transition {
-#       days          = 30
-#       storage_class = "GLACIER"
-#     }
+    transition {
+      days          = 1
+      storage_class = "GLACIER_IR"
+    }
+  }
 
-#     expiration {
-#       days = 365
-#     }
-#   }
-
-#   bucket = aws_s3_bucket.media-sentiment-reddit-json-short-term.id
-# }
+  bucket = aws_s3_bucket.media-sentiment-reddit-json-short-term.id
+}
 
 # S3 report pdf bucket
 
@@ -459,23 +455,19 @@ resource "aws_s3_bucket" "media-sentiment-pdf-reports-short-term" {
   bucket = "media-sentiment-pdf-reports-short-term"
 }
 
-# resource "aws_s3_bucket_lifecycle_configuration" "media-sentiment-pdf-reports-long-term" {
-#   rule {
-#     id      = "media-sentiment-pdf-reports-long-term-rule"
-#     status  = "Enabled"
+resource "aws_s3_bucket_lifecycle_configuration" "media-sentiment-pdf-reports-long-term" {
+  rule {
+    id      = "media-sentiment-pdf-reports-long-term-rule"
+    status  = "Enabled"
 
-#     transition {
-#       days          = 30
-#       storage_class = "GLACIER"
-#     }
+    transition {
+      days          = 1
+      storage_class = "GLACIER_IR"
+    }
+  }
 
-#     expiration {
-#       days = 365
-#     }
-#   }
-
-#   bucket = aws_s3_bucket.media-sentiment-pdf-reports-short-term.id
-# }
+  bucket = aws_s3_bucket.media-sentiment-pdf-reports-short-term.id
+}
 
 # State Machine
 
