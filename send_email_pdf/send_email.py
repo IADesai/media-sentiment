@@ -34,6 +34,8 @@ def create_email_message() -> MIMEMultipart:  # pragma: no cover
 def send_email(config: dict, email_message: MIMEMultipart) -> None:  # pragma: no cover
     """Sends an email with an attachment."""
     print("Sending email.")
+    if not isinstance(email_message, MIMEMultipart):
+        raise TypeError("Email message not supplied as expected.")
     ses_client = boto3.client("ses", aws_access_key_id=config["ACCESS_KEY"],
                               aws_secret_access_key=config["SECRET_KEY"])
     ses_client.send_raw_email(Source=config["EMAIL_SENDER"],
