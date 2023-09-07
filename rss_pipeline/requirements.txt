@@ -1,5 +1,5 @@
 beautifulsoup4
-lxml==4.9.3
+lxml
 nltk
 psycopg2-binary
 pandas

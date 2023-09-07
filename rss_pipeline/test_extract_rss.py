@@ -1,3 +1,5 @@
+"""Tests the extract RRS script"""
+
 from unittest.mock import patch, mock_open
 from extract_rss import download_bbc_uk_news_xml, download_daily_mail_uk_news_xml
 

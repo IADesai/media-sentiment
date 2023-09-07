@@ -2,13 +2,12 @@
 This script converts the XML to dataframes and cleans them 
 as well as applying sentiment analysis
 """
-
 from datetime import datetime
+import requests
 import xml.etree.ElementTree as ET
 import pandas as pd
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-import requests
 from bs4 import BeautifulSoup
 
 
@@ -20,8 +19,7 @@ DAILY_MAIL_UK_NEWS_CSV_FILENAME = "daily_mail_uk_news.csv"
 
 
 def extract_info_from_bbc_articles(xml_file: str) -> pd.DataFrame:
-    """
-    Extracts the title, description, article URL and publication date
+    """Extracts the title, description, article URL and publication date
     from the XML file, saves it as a dataframe
     """
     tree = ET.parse(xml_file)
@@ -38,13 +36,14 @@ def extract_info_from_bbc_articles(xml_file: str) -> pd.DataFrame:
         article['pubdate'] = item.find('pubDate').text
 
         articles.append(article)
+
+    print("Info extracted from BBC News XML successfully")
 
     return pd.DataFrame(articles)
 
 
 def extract_info_from_daily_mail_articles(xml_file: str) -> pd.DataFrame:
-    """
-    Extracts the title, description, article URL and publication date
+    """Extracts the title, description, article URL and publication date
     from the XML file, saves it as a dataframe
     """
     tree = ET.parse(xml_file)
@@ -61,6 +60,7 @@ def extract_info_from_daily_mail_articles(xml_file: str) -> pd.DataFrame:
         article['pubdate'] = item.find('pubDate').text
         articles.append(article)
 
+    print("Info extracted from Daily Mail News XML successfully")
     return pd.DataFrame(articles)
 
 
@@ -101,6 +101,10 @@ def get_bbc_full_article_text(url: str) -> str:
     html = requests.get(url, timeout=10)
     bsobj = BeautifulSoup(html.content, "lxml")
 
+    # Average number of trailing tags that should be removed
+    # from the BBC article (for processing)
+    number_of_trailing_tags = 2
+
     bbc_jargon = ["This video can not be played"]
 
     article_contents_list = []
@@ -112,8 +116,9 @@ def get_bbc_full_article_text(url: str) -> str:
         while element in article_contents_list:
             article_contents_list.remove(element)
 
-    if len(article_contents_list) >= 4:
-        article_contents_list = article_contents_list[:-4]
+    if len(article_contents_list) >= number_of_trailing_tags:
+        article_contents_list = article_contents_list[:-
+                                                      number_of_trailing_tags]
 
     if len(article_contents_list) != 0:
         return " ".join(article_contents_list)
@@ -157,6 +162,8 @@ def transform_bbc_xml_file(bbc_xml_file) -> pd.DataFrame:
         row['title'] + ' ' + row['description'] + ' ' +
         get_bbc_full_article_text(row['url'])), axis=1)
 
+    print("BBC News XML file has been fully processed")
+
     return bbc_articles_df
 
 
@@ -172,6 +179,8 @@ def transform_daily_mail_xml_file(daily_mail_xml_file) -> pd.DataFrame:
 
     daily_mail_articles_df['sentiment_score'] = daily_mail_articles_df.apply(lambda row: get_sentiment_score(
         row['title'] + ' ' + row['description'] + ' ' + get_daily_mail_full_article_text(row['url'])), axis=1)
+
+    print("Daily Mail News XML file has been fully processed")
 
     return daily_mail_articles_df
 

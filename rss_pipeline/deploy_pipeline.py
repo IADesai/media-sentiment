@@ -1,4 +1,5 @@
 """This script runs the full RSS pipeline"""
+import time
 import pandas as pd
 from dotenv import load_dotenv
 import nltk
@@ -36,6 +37,8 @@ def transform_xml_files() -> list[pd.DataFrame]:
 
 
 if __name__ == "__main__":
+    start_time = time.time()
+
     load_dotenv()
     conn = db_connection()
     nltk.download('vader_lexicon')
@@ -45,3 +48,5 @@ if __name__ == "__main__":
 
     for news_df in news_df_list:
         insert_articles_into_rds(conn, news_df)
+
+    print("The RSS pipeline took", time.time() - start_time, "to run")
