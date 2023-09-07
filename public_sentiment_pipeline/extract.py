@@ -9,6 +9,9 @@ from dotenv import dotenv_values
 from boto3 import client
 from pytz import timezone
 
+MAX_REDDIT_PAGES = 40
+MAX_REDDIT_COMMENTS = 500
+
 REDDIT_URL = "https://oauth.reddit.com/r/"
 SUBREDDIT_URL = "https://oauth.reddit.com/"
 REDDIT_ACCESS_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
@@ -49,9 +52,10 @@ def get_subreddit_json(config: dict, reddit_access_token: str) -> dict:
     print(f"Fetching data from the {subreddit} subreddit.")
     auth_headers = {"Authorization": f"bearer {reddit_access_token}",
                     "User-Agent": "Media-Sentiment/0.1 by Media-Project"}
+    parameters = {"limit": MAX_REDDIT_PAGES}
 
     response = requests.get(f"{REDDIT_URL}{subreddit}/new",
-                            headers=auth_headers, params={"limit": 40})
+                            headers=auth_headers, params=parameters)
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned. Code: {response.status_code}")
@@ -111,9 +115,10 @@ def get_json_from_request(subreddit_url: str, reddit_access_token: str) -> dict:
     """Returns the contents of a subreddit page GET request."""
     auth_headers = {"Authorization": f"bearer {reddit_access_token}",
                     "User-Agent": "Media-Sentiment/0.1 by Media-Project"}
+    parameters = {"limit": MAX_REDDIT_COMMENTS, "show": "all"}
 
     response = requests.get(
-        subreddit_url, headers=auth_headers, params={"limit": 500, "show": "all"})
+        subreddit_url, headers=auth_headers, params=parameters)
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned for the url: {subreddit_url}. " +
