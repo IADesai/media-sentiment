@@ -124,6 +124,7 @@ def load_each_row_into_database(conn, page_response_list: list[dict]) -> None:
 
 
 if __name__ == "__main__":  # pragma: no cover
+    # configuration = os.environ
     configuration = dotenv_values()
     list_of_page_dict = run_transform()
     start = time.time()

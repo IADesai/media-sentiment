@@ -50,7 +50,8 @@ def get_subreddit_json(config: dict, reddit_access_token: str) -> dict:
     auth_headers = {"Authorization": f"bearer {reddit_access_token}",
                     "User-Agent": "Media-Sentiment/0.1 by Media-Project"}
 
-    response = requests.get(f"{REDDIT_URL}{subreddit}", headers=auth_headers)
+    response = requests.get(f"{REDDIT_URL}{subreddit}/new",
+                            headers=auth_headers, params={"limit": 40})
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned. Code: {response.status_code}")
@@ -111,7 +112,8 @@ def get_json_from_request(subreddit_url: str, reddit_access_token: str) -> dict:
     auth_headers = {"Authorization": f"bearer {reddit_access_token}",
                     "User-Agent": "Media-Sentiment/0.1 by Media-Project"}
 
-    response = requests.get(subreddit_url, headers=auth_headers)
+    response = requests.get(
+        subreddit_url, headers=auth_headers, params={"limit": 500, "show": "all"})
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned for the url: {subreddit_url}. " +
@@ -166,6 +168,7 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
 
 def run_extract() -> list[dict]:  # pragma: no cover
     """Returns a list of dictionaries for each page in a subreddit."""
+    # configuration = os.environ
     configuration = dotenv_values()
     reddit_token = get_reddit_access_token(configuration)
     reddit_json = get_subreddit_json(configuration, reddit_token)
