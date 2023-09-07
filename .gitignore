@@ -8,6 +8,7 @@ __pycache__
 *.ipynb
 *.csv
 *.json
+*.pdf
 .DS_Store
 *.tfvars
 *.tfstate
