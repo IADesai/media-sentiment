@@ -112,19 +112,37 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
 
     stories_sources_average = stories_data.groupby("source_name")["article_sentiment"].mean().__round__(2)
 
+    if stories_sources_average[0] > 0:
+        bbc_line_color = "lightgreen"
+    if stories_sources_average[0] < 0:
+        bbc_line_color = "#FF7276"
+
+    if stories_sources_average[1] > 0:
+        daily_mail_line_color = "lightgreen"
+    if stories_sources_average[1] < 0:
+        daily_mail_line_color = "#FF7276"
+    
     bbc_fig = go.Figure(go.Indicator(
-        mode = "gauge+number",
+        mode = "gauge+number+delta",
         value = stories_sources_average[0],
         domain = {'x': [0, 1], 'y': [0, 1]},
-        gauge = {'axis': {'range': [-1, 1]}},
+        gauge = {'axis': {'range': [-1, 1]},
+                 'bar': {'color': bbc_line_color,
+                         'line': {"color": "white",
+                                  "width": 3}},
+                 'bgcolor': "white"},
         title = {'text': "BBC Average Sentiment"}))
     bbc_fig.write_image("bbc_plot.svg")
 
     daily_mail_fig = go.Figure(go.Indicator(
-        mode = "gauge+number",
+        mode = "gauge+number+delta",
         value = stories_sources_average[1],
         domain = {'x': [0, 1], 'y': [0, 1]},
-        gauge = {'axis': {'range': [-1, 1]}},
+        gauge = {'axis': {'range': [-1, 1]},
+                 'bar': {'color': daily_mail_line_color,
+                         'line': {"color": "white",
+                                  "width": 3}},
+                 'bgcolor': "white"},
         title = {'text': "Daily Mail Average Sentiment"}))
     daily_mail_fig.write_image("daily_mail_plot.svg")
 
@@ -134,70 +152,64 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
 <title>Media-Sentiment</title>
 <style>
     /* Define the CSS styles for your dashboard here */
-    .title {{
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }}
 
-    .dashboard {{
-        background-color: #f0f0f0;
-        padding: 10px;
-        border: 1px solid #ccc;
+    .title-container {{
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-start;
+        justify-content: flex-end;
     }}
     
     .widget {{
         background-color: #fff;
-        padding: 10px;
+        padding: 7px;
         margin-bottom: 10px;
         border-radius: 5px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }}
-    
+
+    .sentiment-container {{
+        display: flex;
+        justify-content: center;
+    }}
+
     /* Add more styles as needed */
 </style>
 </head>
 <body>
-<div class="dashboard">
-    <div class="title">
-        <h1>Media Sentiment Daily Quarter Report</h1>
-        <img style="width: 50px; height: 50px" src="SL_Favicon-45.png" alt="Logo" class="logo">
-    </div>
+<div class="title-container">
+    <h1>Media Sentiment Daily Quarter Report</h1>
+    <img style="width: 50px; height: 50px" src="SL_Favicon-45.png" alt="Logo"/>
+</div>
 
-    <div class="widget">
+<div class="widget">
+    <div class="sentiment-container">
         <img style="width: 300px; height: 200px" src = "bbc_plot.svg" alt="BBC"/>
-    </div>
-
-    <div class="widget">
         <img style="width: 300px; height: 200px" src = "daily_mail_plot.svg" alt="Daily Mail"/>
     </div>
-
-    <div class="widget">
-        <h1>Highest article sentiment stories</h1>
-        {get_titles(top_5_stories_titles)}
-    </div>
-    
-    <div class="widget">
-        <h1>Lowest article sentiment stories</h1>
-        {get_titles(lowest_5_stories_titles)}
-    </div>
-
-    <div class="widget">
-        <h1>Highest reddit sentiment stories</h1>
-        {get_titles(top_5_reddit_titles)}
-    </div>
-    
-    <div class="widget">
-        <h1>Lowest reddit sentiment stories</h1>
-        {get_titles(lowest_5_reddit_titles)}
-    </div>
-    
-    <!-- Add more widgets as needed -->
 </div>
+
+<div class="widget">
+    <h1>Highest article sentiment stories</h1>
+    {get_titles(top_5_stories_titles)}
+</div>
+
+<div class="widget">
+    <h1>Lowest article sentiment stories</h1>
+    {get_titles(lowest_5_stories_titles)}
+</div>
+
+<div class="widget">
+    <h1>Highest reddit sentiment stories</h1>
+    {get_titles(top_5_reddit_titles)}
+</div>
+
+<div class="widget">
+    <h1>Lowest reddit sentiment stories</h1>
+    {get_titles(lowest_5_reddit_titles)}
+</div>
+
+<!-- Add more widgets as needed -->
 </body>
 </html>
 '''
