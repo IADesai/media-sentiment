@@ -19,7 +19,7 @@ def db_connection() -> psycopg2.extensions.connection | None:
     try:
         return psycopg2.connect(dbname=environ["DATABASE_NAME"],
                                 user=environ["DATABASE_USERNAME"],
-                                host=environ["DATABASE_ENDPOINT"],
+                                host=environ["DATABASE_IP"],
                                 password=environ["DATABASE_PASSWORD"],
                                 cursor_factory=psycopg2.extras.RealDictCursor)
 
