@@ -1,5 +1,6 @@
 """This script is the Lambda function for the full RSS pipeline"""
 import time
+
 import pandas as pd
 from dotenv import load_dotenv
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
