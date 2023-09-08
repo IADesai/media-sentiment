@@ -70,7 +70,11 @@ resource "aws_lambda_function" "media-sentiment-rss-lambda" {
   image_uri     = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-rss-ecr:latest"
   architectures = ["x86_64"]
   package_type  = "Image"
-  timeout = 300
+  memory_size = 256
+  ephemeral_storage {
+    size = 512
+  }
+  timeout = 600
   environment {
     variables = {
       INITIAL_DATABASE  = var.initial_database
