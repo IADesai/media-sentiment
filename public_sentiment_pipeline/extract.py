@@ -3,6 +3,7 @@
 import json
 from datetime import datetime
 import re
+import os
 
 import requests
 from dotenv import dotenv_values
@@ -105,8 +106,8 @@ def save_json_to_file(json_contents: dict, json_filename: str) -> None:  # pragm
 
 def upload_json_s3(config: dict, json_filename: str) -> None:  # pragma: no cover
     """Uploads a JSON file to an S3 bucket."""
-    s3_client = client("s3", aws_access_key_id=config["ACCESS_KEY_ID"],
-                       aws_secret_access_key=config["SECRET_ACCESS_KEY"])
+    s3_client = client("s3", aws_access_key_id=config["ACCESS_KEY"],
+                       aws_secret_access_key=config["SECRET_KEY"])
     s3_client.upload_file(
         json_filename, config["REDDIT_JSON_BUCKET_NAME"], json_filename)
 
@@ -173,8 +174,7 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
 
 def run_extract() -> list[dict]:  # pragma: no cover
     """Returns a list of dictionaries for each page in a subreddit."""
-    # configuration = os.environ
-    configuration = dotenv_values()
+    configuration = os.environ
     reddit_token = get_reddit_access_token(configuration)
     reddit_json = get_subreddit_json(configuration, reddit_token)
     list_of_json = create_pages_list(reddit_json)
