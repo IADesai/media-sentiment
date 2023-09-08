@@ -1,0 +1,9 @@
+psycopg2-binary
+python-dotenv
+pylint
+pytest
+openai
+requests
+nltk
+gensim
+spacy
