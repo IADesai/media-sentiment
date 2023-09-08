@@ -93,6 +93,6 @@ def test_remove_headline_tags_different_case():
 
 def test_get_sentiment_score():
     text = "I am happy, joyful, excited."
-    vader = SentimentIntensityAnalyzer(lexicon_file="vader_lexicon.txt")
+    vader = SentimentIntensityAnalyzer()
     score = get_sentiment_score(text, vader)
     assert isinstance(score, float)
