@@ -110,15 +110,24 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
     lowest_5_reddit_data = sorted_reddit_data.tail(5)
     lowest_5_reddit_titles = lowest_5_reddit_data["title"]
 
-    fig = go.Figure(go.Indicator(
+    stories_sources_average = stories_data.groupby("source_name")["article_sentiment"].mean().__round__(2)
+
+    bbc_fig = go.Figure(go.Indicator(
         mode = "gauge+number",
-        value = 270,
+        value = stories_sources_average[0],
         domain = {'x': [0, 1], 'y': [0, 1]},
+        gauge = {'axis': {'range': [-1, 1]}},
         title = {'text': "BBC Average Sentiment"}))
+    bbc_fig.write_image("bbc_plot.svg")
 
-    img_bytes = px.bar(top_5_stories_data, x="title", y="article_sentiment", width=400, height=600).to_image()
+    daily_mail_fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = stories_sources_average[1],
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        gauge = {'axis': {'range': [-1, 1]}},
+        title = {'text': "Daily Mail Average Sentiment"}))
+    daily_mail_fig.write_image("daily_mail_plot.svg")
 
-    img = base64.b64encode(img_bytes).decode("utf-8")
     template = f'''
 <html>
 <head>
@@ -158,7 +167,15 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
         <h1>Media Sentiment Daily Quarter Report</h1>
         <img style="width: 50px; height: 50px" src="SL_Favicon-45.png" alt="Logo" class="logo">
     </div>
-    
+
+    <div class="widget">
+        <img style="width: 300px; height: 200px" src = "bbc_plot.svg" alt="BBC"/>
+    </div>
+
+    <div class="widget">
+        <img style="width: 300px; height: 200px" src = "daily_mail_plot.svg" alt="Daily Mail"/>
+    </div>
+
     <div class="widget">
         <h1>Highest article sentiment stories</h1>
         {get_titles(top_5_stories_titles)}
