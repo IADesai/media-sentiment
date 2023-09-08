@@ -7,3 +7,4 @@ python-dotenv
 pandas
 kaleido
 xhtml2pdf
+seaborn
