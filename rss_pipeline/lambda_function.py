@@ -1,8 +1,7 @@
-"""This script runs the full RSS pipeline"""
+"""This script is the Lambda function for the full RSS pipeline"""
 import time
 import pandas as pd
 from dotenv import load_dotenv
-import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 from extract_rss import download_bbc_uk_news_xml, download_daily_mail_uk_news_xml
@@ -38,13 +37,12 @@ def transform_xml_files(sentiment_analyser: SentimentIntensityAnalyzer) -> list[
     return [bbc_articles_df, daily_mail_articles_df]
 
 
-if __name__ == "__main__":
+def handler(event, context):
     start_time = time.time()
 
     load_dotenv()
     conn = db_connection()
 
-    nltk.download('vader_lexicon')
     vader = SentimentIntensityAnalyzer(lexicon_file="vader_lexicon.txt")
 
     extract_xml_files_from_rss()
@@ -54,3 +52,5 @@ if __name__ == "__main__":
         insert_articles_into_rds(conn, news_df)
 
     print("The RSS pipeline took", time.time() - start_time, "to run")
+
+    return [{"Pipeline State": "Success"}]

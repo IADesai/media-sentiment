@@ -2,6 +2,7 @@ import unittest
 import pandas as pd
 from datetime import datetime
 import xml.etree.ElementTree as ET
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from unittest.mock import mock_open, patch
 from transform_rss import (
     extract_info_from_bbc_articles,
@@ -92,5 +93,6 @@ def test_remove_headline_tags_different_case():
 
 def test_get_sentiment_score():
     text = "I am happy, joyful, excited."
-    score = get_sentiment_score(text)
+    vader = SentimentIntensityAnalyzer(lexicon_file="vader_lexicon.txt")
+    score = get_sentiment_score(text, vader)
     assert isinstance(score, float)

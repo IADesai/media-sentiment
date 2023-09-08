@@ -23,7 +23,8 @@ def test_download_bbc_uk_news_xml(mock_file_open):
                                  BBC_UK_NEWS_XML_FILE_NAME)
 
         mock_get.assert_called_once_with(BBC_UK_NEWS_RSS_LINK, timeout=10)
-        mock_file_open.assert_called_once_with(BBC_UK_NEWS_XML_FILE_NAME, "wb")
+        mock_file_open.assert_called_once_with(
+            f"/tmp/{BBC_UK_NEWS_XML_FILE_NAME}", "wb")
         mock_file_open().write.assert_called_once_with(b"Fake XML Content")
 
 
@@ -41,5 +42,5 @@ def test_download_daily_mail_uk_news_xml(mock_file_open):
         mock_get.assert_called_once_with(
             DAILY_MAIL_UK_NEWS_RSS_LINK, timeout=10)
         mock_file_open.assert_called_once_with(
-            DAILY_MAIL_UK_NEWS_XML_FILE_NAME, "wb")
+            f"/tmp/{DAILY_MAIL_UK_NEWS_XML_FILE_NAME}", "wb")
         mock_file_open().write.assert_called_once_with(b"Fake XML Content")

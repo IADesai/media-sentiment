@@ -3,8 +3,8 @@ This script converts the XML to dataframes and cleans them
 as well as applying sentiment analysis
 """
 from datetime import datetime
-import requests
 import xml.etree.ElementTree as ET
+import requests
 import pandas as pd
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
@@ -98,7 +98,7 @@ def remove_headline_tags(headline: str) -> str:
 
 def get_bbc_full_article_text(url: str) -> str:
     """Uses BeautifulSoup to extract the full article from the URL"""
-    html = requests.get(url, timeout=10)
+    html = requests.get(url)
     bsobj = BeautifulSoup(html.content, "lxml")
 
     # Average number of trailing tags that should be removed
@@ -128,7 +128,7 @@ def get_bbc_full_article_text(url: str) -> str:
 
 def get_daily_mail_full_article_text(url: str) -> str:
     """Uses BeautifulSoup to extract the full article from the URL"""
-    response = requests.get(url, timeout=10)
+    response = requests.get(url)
 
     html = BeautifulSoup(response.text, 'html.parser')
 
@@ -141,44 +141,49 @@ def get_daily_mail_full_article_text(url: str) -> str:
     return ""
 
 
-def get_sentiment_score(article_text: str) -> float:
+def get_sentiment_score(article_text: str, sentiment_analyser: SentimentIntensityAnalyzer) -> float:
     """Returns the sentiment score using VADER"""
-    vader = SentimentIntensityAnalyzer()
-    sentiment_score = vader.polarity_scores(article_text)["compound"]
+    sentiment_score = sentiment_analyser.polarity_scores(article_text)[
+        "compound"]
 
     return sentiment_score
 
 
-def transform_bbc_xml_file(bbc_xml_file) -> pd.DataFrame:
+def transform_bbc_xml_file(bbc_xml_file: str, sentiment_analyser: SentimentIntensityAnalyzer) -> pd.DataFrame:
     """Converts the BBC XML file to a dataframe and cleans it"""
-    bbc_articles_df = extract_info_from_bbc_articles(bbc_xml_file)
+    bbc_articles_df = extract_info_from_bbc_articles(f"/tmp/{bbc_xml_file}")
 
     bbc_articles_df['pubdate'] = bbc_articles_df['pubdate'].apply(
         convert_pubdate_to_timestamp)
     bbc_articles_df['title'] = bbc_articles_df['title'].apply(
         remove_headline_tags)
 
+    print("Calculating the sentiment score for all of the BBC articles...")
+
     bbc_articles_df['sentiment_score'] = bbc_articles_df.apply(lambda row: get_sentiment_score(
         row['title'] + ' ' + row['description'] + ' ' +
-        get_bbc_full_article_text(row['url'])), axis=1)
+        get_bbc_full_article_text(row['url']), sentiment_analyser), axis=1)
 
     print("BBC News XML file has been fully processed")
 
     return bbc_articles_df
 
 
-def transform_daily_mail_xml_file(daily_mail_xml_file) -> pd.DataFrame:
+def transform_daily_mail_xml_file(daily_mail_xml_file: str, sentiment_analyser: SentimentIntensityAnalyzer) -> pd.DataFrame:
     """Converts the Daily Mail XML file to a dataframe and cleans it"""
     daily_mail_articles_df = extract_info_from_daily_mail_articles(
-        daily_mail_xml_file)
+        f"/tmp/{daily_mail_xml_file}")
 
     daily_mail_articles_df['pubdate'] = daily_mail_articles_df['pubdate'].apply(
         convert_pubdate_to_timestamp)
     daily_mail_articles_df['title'] = daily_mail_articles_df['title'].apply(
         remove_headline_tags)
 
+    print("Calculating the sentiment score for all of the Daily Mail articles...")
+
     daily_mail_articles_df['sentiment_score'] = daily_mail_articles_df.apply(lambda row: get_sentiment_score(
-        row['title'] + ' ' + row['description'] + ' ' + get_daily_mail_full_article_text(row['url'])), axis=1)
+        row['title'] + ' ' + row['description'] + ' ' +
+        get_daily_mail_full_article_text(row['url']), sentiment_analyser), axis=1)
 
     print("Daily Mail News XML file has been fully processed")
 
@@ -189,9 +194,11 @@ if __name__ == "__main__":
 
     nltk.download('vader_lexicon')
 
-    bbc_articles_df = transform_bbc_xml_file(BBC_UK_NEWS_XML_FILE_NAME)
+    vader = SentimentIntensityAnalyzer(lexicon_file="vader_lexicon.txt")
+
+    bbc_articles_df = transform_bbc_xml_file(BBC_UK_NEWS_XML_FILE_NAME, vader)
     daily_mail_articles_df = transform_daily_mail_xml_file(
-        DAILY_MAIL_UK_NEWS_XML_FILE_NAME)
+        DAILY_MAIL_UK_NEWS_XML_FILE_NAME, vader)
 
     daily_mail_articles_df.to_csv(DAILY_MAIL_UK_NEWS_CSV_FILENAME)
     bbc_articles_df.to_csv(BBC_UK_NEWS_CSV_FILENAME)

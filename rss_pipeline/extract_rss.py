@@ -2,6 +2,7 @@
 
 import requests
 from requests.exceptions import RequestException
+import os
 
 BBC_UK_NEWS_RSS_LINK = "http://feeds.bbci.co.uk/news/uk/rss.xml"
 DAILY_MAIL_UK_NEWS_RSS_LINK = "https://www.dailymail.co.uk/home/index.rss"
@@ -15,7 +16,7 @@ def download_bbc_uk_news_xml(bbc_uk_news_rss_link: str, bbc_uk_news_xml_file_nam
     try:
         response = requests.get(bbc_uk_news_rss_link, timeout=10)
         if response.status_code == 200:
-            with open(bbc_uk_news_xml_file_name, "wb") as file:
+            with open(f"/tmp/{bbc_uk_news_xml_file_name}", "wb") as file:
                 file.write(response.content)
             print("BBC UK news XML downloaded successfully.")
         else:
@@ -30,7 +31,7 @@ def download_daily_mail_uk_news_xml(daily_mail_uk_news_rss_link: str, daily_mail
     try:
         response = requests.get(daily_mail_uk_news_rss_link, timeout=10)
         if response.status_code == 200:
-            with open(daily_mail_uk_news_xml_file_name, "wb") as file:
+            with open(f"/tmp/{daily_mail_uk_news_xml_file_name}", "wb") as file:
                 file.write(response.content)
             print("Daily Mail UK news XML downloaded successfully.")
         else:
