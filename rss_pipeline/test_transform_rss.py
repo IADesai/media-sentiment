@@ -91,6 +91,18 @@ def test_remove_headline_tags_different_case():
     assert cleaned_headline == "Twitter is renamed to X"
 
 
+def test_headline_tags_embedded_lowercase():
+    headline = "BREAKING: The Big Glass is breaking"
+    cleaned_headline = remove_headline_tags(headline)
+    assert cleaned_headline == "The Big Glass is breaking"
+
+
+def test_headline_tags_embedded_same_case():
+    headline = "VIDEO: Person is captured with a Blockbuster VIDEO"
+    cleaned_headline = remove_headline_tags(headline)
+    assert cleaned_headline == "Person is captured with a Blockbuster VIDEO"
+
+
 def test_get_sentiment_score():
     text = "I am happy, joyful, excited."
     vader = SentimentIntensityAnalyzer()

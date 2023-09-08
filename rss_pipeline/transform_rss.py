@@ -2,6 +2,7 @@
 This script converts the XML to dataframes and cleans them 
 as well as applying sentiment analysis
 """
+import re
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import requests
@@ -86,12 +87,15 @@ def remove_headline_tags(headline: str) -> str:
         "EDITORIAL", "ANALYSIS",
         "INVESTIGATION", "SPECIAL FEATURE"]
 
-    words = headline.split()
+    # Regex pattern to match any of the tags as the first word
+    first_tag_pattern = r'(?i)^\s*(?:' + '|'.join(re.escape(tag)
+                                                  for tag in headline_tags) + r')\b[^\w\s]*'
 
-    if words[0].upper() in headline_tags:
-        words.pop(0)
+    # Use regex to remove the first part of the headline if it matches the pattern
+    updated_headline = re.sub(first_tag_pattern, '', headline, count=1)
 
-    updated_headline = ' '.join(words)
+    # Removes the extra spaces
+    updated_headline = ' '.join(updated_headline.split())
 
     return updated_headline
 
@@ -103,7 +107,7 @@ def get_bbc_full_article_text(url: str) -> str:
 
     # Average number of trailing tags that should be removed
     # from the BBC article (for processing)
-    number_of_trailing_tags = 2
+    number_of_trailing_tags = 4
 
     bbc_jargon = ["This video can not be played"]
 
@@ -160,9 +164,13 @@ def transform_bbc_xml_file(bbc_xml_file: str, sentiment_analyser: SentimentInten
 
     print("Calculating the sentiment score for all of the BBC articles...")
 
-    bbc_articles_df['sentiment_score'] = bbc_articles_df.apply(lambda row: get_sentiment_score(
-        row['title'] + ' ' + row['description'] + ' ' +
-        get_bbc_full_article_text(row['url']), sentiment_analyser), axis=1)
+    # bbc_articles_df['sentiment_score'] = bbc_articles_df.apply(lambda row: get_sentiment_score(
+    #     row['title'] + ' ' + row['description'] + ' ' +
+    #     get_bbc_full_article_text(row['url']), sentiment_analyser), axis=1)
+
+    bbc_articles_df['sentiment_score'] = bbc_articles_df.apply(lambda row: (0.7 * get_sentiment_score((row['title'] +
+                                                                                                       ' ' + row['description']), sentiment_analyser)) +
+                                                               (0.3 * get_sentiment_score(get_bbc_full_article_text(row['url']), sentiment_analyser)), axis=1)
 
     print("BBC News XML file has been fully processed")
 
@@ -181,9 +189,13 @@ def transform_daily_mail_xml_file(daily_mail_xml_file: str, sentiment_analyser: 
 
     print("Calculating the sentiment score for all of the Daily Mail articles...")
 
-    daily_mail_articles_df['sentiment_score'] = daily_mail_articles_df.apply(lambda row: get_sentiment_score(
-        row['title'] + ' ' + row['description'] + ' ' +
-        get_daily_mail_full_article_text(row['url']), sentiment_analyser), axis=1)
+    # daily_mail_articles_df['sentiment_score'] = daily_mail_articles_df.apply(lambda row: get_sentiment_score(
+    #     row['title'] + ' ' + row['description'] + ' ' +
+    #     get_daily_mail_full_article_text(row['url']), sentiment_analyser), axis=1)
+
+    daily_mail_articles_df['sentiment_score'] = daily_mail_articles_df.apply(lambda row: (0.7 * get_sentiment_score((row['title'] +
+                                                                                                                     ' ' + row['description']), sentiment_analyser)) +
+                                                                             (0.3 * get_sentiment_score(get_daily_mail_full_article_text(row['url']), sentiment_analyser)), axis=1)
 
     print("Daily Mail News XML file has been fully processed")
 
