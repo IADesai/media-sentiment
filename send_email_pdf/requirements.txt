@@ -8,3 +8,4 @@ pandas
 kaleido
 xhtml2pdf
 boto3
+seaborn
