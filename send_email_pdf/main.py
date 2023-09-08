@@ -166,7 +166,7 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
     
     .widget {{
         background-color: #fff;
-        padding: 7px;
+        padding: 9px;
         margin-bottom: 10px;
         border-radius: 5px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
