@@ -15,3 +15,6 @@ __pycache__
 *.tfstate.backup
 *.terraform.lock.hcl
 *.terraform.tfstate.lock.info
+*.svg
+*.pdf
+*.png

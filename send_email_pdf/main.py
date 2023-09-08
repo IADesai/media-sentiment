@@ -118,19 +118,19 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
     stories_sources_average = stories_data.groupby(
         "source_name")["article_sentiment"].mean().__round__(2)
 
-    if stories_sources_average[0] > 0:
+    if stories_sources_average.iloc[0] > 0:
         bbc_line_color = "lightgreen"
-    if stories_sources_average[0] < 0:
+    if stories_sources_average.iloc[0] < 0:
         bbc_line_color = "#FF7276"
 
-    if stories_sources_average[1] > 0:
+    if stories_sources_average.iloc[1] > 0:
         daily_mail_line_color = "lightgreen"
-    if stories_sources_average[1] < 0:
+    if stories_sources_average.iloc[1] < 0:
         daily_mail_line_color = "#FF7276"
 
     bbc_fig = go.Figure(go.Indicator(
         mode="gauge+number+delta",
-        value=stories_sources_average[0],
+        value=stories_sources_average.iloc[0],
         domain={'x': [0, 1], 'y': [0, 1]},
         gauge={'axis': {'range': [-1, 1]},
                'bar': {'color': bbc_line_color,
@@ -142,7 +142,7 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
 
     daily_mail_fig = go.Figure(go.Indicator(
         mode="gauge+number+delta",
-        value=stories_sources_average[1],
+        value=stories_sources_average.iloc[1],
         domain={'x': [0, 1], 'y': [0, 1]},
         gauge={'axis': {'range': [-1, 1]},
                'bar': {'color': daily_mail_line_color,
@@ -155,16 +155,14 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
     template = f'''
 <html>
 <head>
-<title>Media-Sentiment</title>
 <style>
     /* Define the CSS styles for your dashboard here */
 
     .title-container {{
-        display: inline-flex;
+        display: flex;
         flex-direction: row;
-        align-items: center;
-        justify-content: center;
     }}
+
     
     .widget {{
         background-color: #fff;
@@ -178,14 +176,13 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
         display: flex;
         justify-content: center;
     }}
-
     /* Add more styles as needed */
 </style>
 </head>
 <body>
 <div class="title-container">
-    <h1>Media Sentiment Daily Quarter Report</h1>
-    <img style="width: 50px; height: 50px" src="SL_Favicon-45.png" alt="Logo"/>
+    <img style="width: 50px; height: 50px; margin-bottom: 10px;" src="SL_Favicon-45.png" alt="Logo" class=title-container/>
+    <span style="text-align:center;font-size:250%;">Media Sentiment Daily Quarter Report</span>
 </div>
 
 <div class="widget">
