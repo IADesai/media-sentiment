@@ -133,6 +133,21 @@ def read_json_as_text(json_filename: str) -> list[str]:  # pragma: no cover
         return f_obj.readlines()
 
 
+def remove_unrecognised_formatting(comment: str) -> str:
+    """Removes formatting not recognised by Vader."""
+    pass
+
+
+def clean_reddit_comments(comment: str) -> str | bool:
+    """Returns a comment in a format supported by Vader.
+
+    If a comment is unsuitable to be used False is returned."""
+    if (comment not in {"[removed]", "[deleted]"}
+        and "**Removed/tempban**" not in comment
+            and "**Removed/warning**" not in comment):
+        return comment
+
+
 def get_comments_list(json_filename: str) -> list[str]:
     """Returns a list of comments from a file."""
     comment_list = []
@@ -142,10 +157,9 @@ def get_comments_list(json_filename: str) -> list[str]:
         find_comment = re.search(r"\"body\": \"(.+)\",", line)
         if find_comment:
             comment = find_comment.group(1)
-            if (comment not in {"[removed]", "[deleted]"}
-                and "**Removed/tempban**" not in comment
-                    and "**Removed/warning**" not in comment):
-                comment_list.append(find_comment.group(1))
+            cleaned_comment = clean_reddit_comments(comment)
+            if cleaned_comment:
+                comment_list.append(cleaned_comment)
     return comment_list
 
 
