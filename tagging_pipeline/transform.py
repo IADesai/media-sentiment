@@ -10,11 +10,23 @@ from gensim.models import word2vec
 import spacy
 import numpy as np
 
-RESPONSE_TOPICS = ['Menopause', 'Treatments', 'NHS', 'Charged', 'Diabetic', 'Ozempic', 'Shortages',
-                   'Hospital', 'Campaign', 'Woke', 'Gender', 'Meat', 'Scientists', 'Contraception', 'Misinformation', 'Face']
 
-GENERAL_TOPICS = ['Animal','International', 'Finance', 'Science', 'Sports', 'Gaming', 'Culture', 'Health', 'Crime', 'Entertainment', 'Transport', 'Monarchy', 'Education', 'Business', 'Technology',
-                  'Environment', 'Family', 'Miscellaneous', 'Food', 'Travel', 'Home', 'Events', 'Music', 'Art', 'Celebrities', 'Locations']
+
+
+def get_story_topics(response) -> list:
+    """Extracts dictionaries containing each story id and associated topics from the openai response"""
+
+    all_topics = response['choices'][0]['message']['content']
+    all_dicts = re.findall('\{(.*?)\}', all_topics)
+    cleaned_topics = []
+
+    for topic in all_dicts:
+        try:
+            topic_split = topic.split(':')
+            cleaned_topics.append({int(topic_split[0]): eval(topic_split[1])})
+        except:
+            continue
+    return cleaned_topics
 
 
 def read_topics_csv():

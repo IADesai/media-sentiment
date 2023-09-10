@@ -61,8 +61,11 @@ CREATE TABLE story_keyword_link(
     story_id INT,
     PRIMARY KEY (link_id),
     FOREIGN KEY (keyword_id) REFERENCES keywords(keyword_id),
-    FOREIGN KEY (story_id) REFERENCES stories(story_id)
+    FOREIGN KEY (story_id) REFERENCES stories(story_id),
+    ADD CONSTRAINT unique_id_pairs UNIQUE (keyword_id, story_id);
 );
 
 INSERT INTO sources (source_name) VALUES ('bbc');
 INSERT INTO sources (source_name) VALUES ('dailymail');
+
+
