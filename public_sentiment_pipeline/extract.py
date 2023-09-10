@@ -135,11 +135,15 @@ def read_json_as_text(json_filename: str) -> list[str]:  # pragma: no cover
 
 def remove_unrecognised_formatting(comment: str) -> str:
     """Removes formatting not recognised by Vader."""
-    characters_to_remove = ("\\n", "\\\n", "\\u2019", "#x200B;")
+    characters_to_remove = ("\\n", "\\\n", "#x200B;", "\\u2013", "&gt;")
     for text in characters_to_remove:
         comment = comment.replace(text, "")
 
     comment = comment.replace("&amp;", "&")
+    comment = comment.replace("\\u2019", "'")
+    comment = comment.replace("\\u00a", "£")
+
+    comment = re.sub(r"\[(.+)\]\(.+\)", "\\1", comment)
 
     return comment
 

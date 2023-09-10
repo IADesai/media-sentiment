@@ -247,15 +247,15 @@ def test_no_list_returned_if_exception_by_process_reddit_page(fake_comments_list
                            " This contains double new lines  ."),
                           ("&gt;comment&gt;", "comment"),
                           ("\\\n&gt;", ""),
-                          ("wasn\\u2019t", "wasnt"),
-                          ("\\u2019,\\u2019", ","),
+                          ("wasn\\u2019t", "wasn't"),
+                          ("\\u2019,\\u2019", "','"),
                           ("&amp;", "&"),
                           ("h&amp;s", "h&s"),
                           ("#x200B;", ""),
                           ("this#x200B; is#x200B; a#x200B; comment",
                            "this is a comment"),
                           ("They start just under \\u00a38k, most people can afford that. \\n\\n[Citroen Ami \\u2013 from \\u00a37,695](https://parkers-images.bauersecure.com/pagefiles/308460/citroen_ami_001.jpg)",
-                           "They start just under 38k, most people can afford that. Citroen Ami from 37,695"),
+                           "They start just under £38k, most people can afford that. Citroen Ami  from £37,695"),
                           ("[Text](link)", "Text")])
 def test_formatting_removed_from_comments(comment, cleaned_comment):
     """Tests formatting is removed from comments."""
