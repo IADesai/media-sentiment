@@ -242,13 +242,13 @@ def test_no_list_returned_if_exception_by_process_reddit_page(fake_comments_list
 
 
 @pytest.mark.parametrize("comment,cleaned_comment",
-                         [("\\n This contains single new lines \\n .", " This contains single new lines  ."),
-                          ("\\\n This contains double new lines \\\n .",
+                         [("\n This contains single new lines \n .", " This contains single new lines  ."),
+                          ("\\n This contains double new lines \\n .",
                            " This contains double new lines  ."),
                           ("&gt;comment&gt;", "comment"),
-                          ("\\\n&gt;", ""),
+                          ("\\n&gt;", ""),
                           ("wasn\\u2019t", "wasn't"),
-                          ("\\u2019,\\u2019", "','"),
+                          ("\\u2018,\\u2019", "','"),
                           ("&amp;", "&"),
                           ("h&amp;s", "h&s"),
                           ("#x200B;", ""),
@@ -258,7 +258,9 @@ def test_no_list_returned_if_exception_by_process_reddit_page(fake_comments_list
                            "They start just under £38k, most people can afford that. Citroen Ami  from £37,695"),
                           ("[Text](link)", "Text"),
                           ("\\u201cThis is a quote\\u201d", "\"This is a quote\""),
-                          ("\\u201c\\u201c\\u201d\\u201d", "\"\"\"\"")])
+                          ("\\u201c\\u201c\\u201d\\u201d", "\"\"\"\""),
+                          ("\\u2026", ""),
+                          ("\\u2026text\\u2026", "text")])
 def test_formatting_removed_from_comments(comment, cleaned_comment):
     """Tests formatting is removed from comments."""
     res = remove_unrecognised_formatting(comment)
