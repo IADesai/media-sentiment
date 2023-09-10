@@ -139,9 +139,11 @@ def remove_unrecognised_formatting(comment: str) -> str:
     for text in characters_to_remove:
         comment = comment.replace(text, "")
 
-    comment = comment.replace("&amp;", "&")
-    comment = comment.replace("\\u2019", "'")
-    comment = comment.replace("\\u00a", "£")
+    characters_to_replace = (
+        {"&amp;": "&", "\\u2019": "'", "\\u00a": "£", "\\u201c": "\"", "\\u201d": "\""})
+
+    for text in characters_to_replace:
+        comment = comment.replace(text, characters_to_replace[text])
 
     comment = re.sub(r"\[(.+)\]\(.+\)", "\\1", comment)
 

@@ -256,7 +256,9 @@ def test_no_list_returned_if_exception_by_process_reddit_page(fake_comments_list
                            "this is a comment"),
                           ("They start just under \\u00a38k, most people can afford that. \\n\\n[Citroen Ami \\u2013 from \\u00a37,695](https://parkers-images.bauersecure.com/pagefiles/308460/citroen_ami_001.jpg)",
                            "They start just under £38k, most people can afford that. Citroen Ami  from £37,695"),
-                          ("[Text](link)", "Text")])
+                          ("[Text](link)", "Text"),
+                          ("\\u201cThis is a quote\\u201d", "\"This is a quote\""),
+                          ("\\u201c\\u201c\\u201d\\u201d", "\"\"\"\"")])
 def test_formatting_removed_from_comments(comment, cleaned_comment):
     """Tests formatting is removed from comments."""
     res = remove_unrecognised_formatting(comment)
