@@ -135,7 +135,10 @@ def read_json_as_text(json_filename: str) -> list[str]:  # pragma: no cover
 
 def remove_unrecognised_formatting(comment: str) -> str:
     """Removes formatting not recognised by Vader."""
-    pass
+    characters_to_remove = ("\\n", "\\\n", "\\u2019")
+    for text in characters_to_remove:
+        comment = comment.replace(text, "")
+    return comment
 
 
 def clean_reddit_comments(comment: str) -> str | bool:
