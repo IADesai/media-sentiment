@@ -138,6 +138,9 @@ def remove_unrecognised_formatting(comment: str) -> str:
     characters_to_remove = ("\\n", "\\\n", "\\u2019")
     for text in characters_to_remove:
         comment = comment.replace(text, "")
+
+    comment = comment.replace("&amp;", "&")
+
     return comment
 
 
