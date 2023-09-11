@@ -28,20 +28,17 @@ def database_connection() -> psycopg2.extensions.connection | None:
 
 def create_batch_json(start, stories_list, table, id):
     print("Starting pipeline...")
-    count = 0
     for batch_stories_list in separate_stories(stories_list):
-        if count == 3:
-            break
-        count += 1
+
         print(
             f"OpenAI request made for {len(batch_stories_list)} {table} stories in {time.time()-start:.2f} seconds")
         openai_response = make_openai_request(batch_stories_list)
-        create_response_json(openai_response, table, id)
+        create_response_json(openai_response, table)
         media_responses = read_response_json(table)
         valid_stories = get_story_topics(media_responses)
         create_topic_csv(valid_stories, table, id)
         print(
-            f"CSV created for {table} stories in {time.time()-start:.2f} seconds")
+            f"{table} CSV created for {len(valid_stories)} stories in {time.time()-start:.2f} seconds")
         keywords_df = create_keywords_df(table)
         if table == 'public':
             load_media_keywords_df_into_rds(connection, keywords_df)

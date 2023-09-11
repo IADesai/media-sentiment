@@ -9,7 +9,6 @@ import spacy
 from dotenv import load_dotenv
 
 CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-CURRENT_TIMESTAMP = "2023-09-11 10:54:39"
 CSV_FILE = f'{CURRENT_TIMESTAMP}.csv'
 
 

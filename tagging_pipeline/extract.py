@@ -12,7 +12,7 @@ PROMPT = """Generate three words for each story's main topics.
 For example, the headline 'Sunak questioned by Police Service of Northern Ireland for vandalism" should return the topics "Politics, Crime, Law", while the headline 'Royal family requests giant pandas to return to China in December' should return "Animals, China, Monarchy".
 You must return only one word for each topic. Make sure topics are broad to allow grouping stories by topic easier, for example, if Queen Elizabeth or Prince Harry are mentioned in the story, one of the three output topics should be 'Monarchy', or an output topic may be 'Crime' if the story is about theft. Good topics include but are not limited to: Monarchy, Relationships, Football, War, Shopping, Crime, Law, Politics, Education, Scandal, Finance, Climate, Government, Accident.
 The output for each story MUST be in a Python dictionary format where the key corresponds to the INT provided with the story and its paired value being a list of the topics (do not return the title under any circumstances). Here's an example output for two stories: "[{3: ['Weather', 'History', 'Technology']}, {4: ['Health', 'Science', 'Celebrity']}]", output a list of dictionaries for these stories: """
-MAX_LIST_SIZE = 75
+MAX_LIST_SIZE = 50
 CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 JSON_FILE = f'{CURRENT_TIMESTAMP}.json'
 
@@ -42,7 +42,7 @@ def get_reddit_stories(conn) -> list | None:
 
 
 def separate_stories(stories_list: list) -> None:
-    """Stores maximum of 75 stories into lists to be passed into functions"""
+    """Stores maximum of 50 stories into lists to be passed into functions"""
 
     twenty_stories = []
     for story in stories_list:
@@ -81,14 +81,7 @@ def read_response_json(table: str):
     return existing_response
 
 
-def create_response_json(openai_response: dict, table: str, id: str) -> None:
+def create_response_json(openai_response: dict, table: str) -> None:
     """Stores openai response in a json file"""
-
-    if not exists(f"{table}-{JSON_FILE}"):
-        with open(f"{table}-{JSON_FILE}", 'a') as f:
-            json.dump([openai_response], f, indent=4)
-    else:
-        existing_response = read_response_json(table)
-        existing_response.append(openai_response)
-        with open(f"{table}-{JSON_FILE}", 'w') as f:
-            json.dump(existing_response, f, indent=4)
+    with open(f"{table}-{JSON_FILE}", 'w') as f:
+        json.dump(openai_response, f, indent=4)

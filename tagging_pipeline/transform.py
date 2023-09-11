@@ -21,27 +21,27 @@ def read_response_json() -> list[dict]:
     """Extracts openai response data from json file."""
 
     with open(JSON_FILE, 'r') as f:
-        responses_list = json.load(f)
-    return responses_list
+        response_list = json.load(f)
+    return response_list
 
 
-def get_story_topics(responses_list: list[dict]) -> list[dict]:
+def get_story_topics(response_list: list[dict]) -> list[dict]:
     """Extracts dictionaries containing each story id and associated topics from the openai response."""
     valid_stories = []
-    for response in responses_list:
-        all_stories_data = response['choices'][0]['message']['content']
-        stories_dict = re.findall('\{(.*?)\}', all_stories_data)
-        for story in stories_dict:
-            try:
-                topic_split = story.split(':')
-                valid_stories.append(
-                    {int(topic_split[0]): eval(topic_split[1])})
-            except:
-                continue
+
+    all_stories_data = response_list['choices'][0]['message']['content']
+    stories_dict = re.findall('\{(.*?)\}', all_stories_data)
+    for story in stories_dict:
+        try:
+            topic_split = story.split(':')
+            valid_stories.append(
+                {int(topic_split[0]): eval(topic_split[1])})
+        except:
+            continue
     return valid_stories
 
 
-def create_topic_csv(valid_stories,table,id):
+def create_topic_csv(valid_stories, table, id):
     """Stores media story topics in a csv file"""
     response_df = pd.DataFrame(
         columns=[id, 'topic_one', 'topic_two', 'topic_three'])
