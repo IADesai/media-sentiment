@@ -81,20 +81,16 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
     sorted_article_data = stories_data.sort_values(
         by='article_sentiment', ascending=False)
 
-    top_5_stories_data = sorted_article_data.head(5)
-    top_5_stories_titles = top_5_stories_data["title"]
+    top_5_stories_titles = sorted_article_data.head(5)["title"]
 
-    lowest_5_stories_data = sorted_article_data.tail(5)
-    lowest_5_stories_titles = lowest_5_stories_data["title"]
+    lowest_5_stories_titles = sorted_article_data.tail(5)["title"]
 
     sorted_reddit_data = reddit_data.sort_values(
         by='re_sentiment_mean', ascending=False)
 
-    top_5_reddit_data = sorted_reddit_data.head(5)
-    top_5_reddit_titles = top_5_reddit_data["title"]
+    top_5_reddit_titles = sorted_reddit_data.head(5)["title"]
 
-    lowest_5_reddit_data = sorted_reddit_data.tail(5)
-    lowest_5_reddit_titles = lowest_5_reddit_data["title"]
+    lowest_5_reddit_titles = sorted_reddit_data.tail(5)["title"]
 
     stories_sources_average = stories_data.groupby(
         "source_name")["article_sentiment"].mean().__round__(2)
