@@ -186,7 +186,6 @@ resource "aws_db_instance" "media-sentiment-rds" {
 
 # ECS IAM Role
 
-
 resource "aws_iam_role" "ecs-task-execution-role" {
   name = "ecs-task-execution-role"
 
