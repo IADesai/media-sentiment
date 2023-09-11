@@ -41,8 +41,9 @@ def join_all_reddit_info(conn: connection) -> pd.DataFrame:
         tuples_list = cur.fetchall()
     reddit_df = pd.DataFrame(tuples_list, columns=["article_id", "domain", "title", "article_url",
                                                    "url", "re_sentiment_mean", "re_sentiment_st_dev",
-                                                   "re_sentiment_median", "re_vote_score", "re_upvote_ratio", "re_post_comments",
-                                                   "re_processed_comments", "re_created_timestamp"])
+                                                   "re_sentiment_median", "re_vote_score", "re_upvote_ratio",
+                                                   "re_post_comments", "re_processed_comments",
+                                                   "re_created_timestamp"])
     return reddit_df
 
 
