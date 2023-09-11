@@ -425,9 +425,11 @@ resource "aws_lambda_function" "media-sentiment-email-lambda" {
       DATABASE_PORT     = var.database_port
       DATABASE_USERNAME = var.database_username
       DATABASE_IP       = aws_db_instance.media-sentiment-rds.address
-      ACCESS_KEY_ID     = var.access_key
-      SECRET_ACCESS_KEY = var.secret_key
-      BUCKET_NAME       = var.bucket_name
+      ACCESS_KEY     = var.access_key
+      SECRET_KEY = var.secret_key
+      BUCKET_NAME       = var.email_bucket_name
+      EMAIL_SENDER = var.email_sender
+      EMAIL_RECIPIENT = var.email_recipient
     }
   }
 }

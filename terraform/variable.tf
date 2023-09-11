@@ -69,3 +69,15 @@ variable "reddit_username" {
 variable "reddit_password" {
   description = "Password for reddit"
 }
+
+variable "email_bucket_name" {
+  description = "Name of email s3 bucket to pull info from"
+}
+
+variable "email_sender" {
+  description = "Email address of sender"
+}
+
+variable "email_recipient" {
+  description = "Email address of recipient"
+}
