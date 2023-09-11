@@ -133,6 +133,36 @@ def read_json_as_text(json_filename: str) -> list[str]:  # pragma: no cover
         return f_obj.readlines()
 
 
+def remove_unrecognised_formatting(comment: str) -> str:
+    """Removes formatting not recognised by Vader."""
+    characters_to_remove = ("\n", "\\n", "#x200B;",
+                            "\\u2013", "&gt;", "\\u2026")
+    for text in characters_to_remove:
+        comment = comment.replace(text, "")
+
+    characters_to_replace = (
+        {"&amp;": "&", "\\u2018": "'", "\\u2019": "'", "\\u00a": "£", "\\u201c": "\"", "\\u201d": "\""})
+
+    for text in characters_to_replace:
+        comment = comment.replace(text, characters_to_replace[text])
+
+    comment = re.sub(r"\[(.+)\]\(.+\)", "\\1", comment)
+
+    return comment
+
+
+def clean_reddit_comments(comment: str) -> str | bool:
+    """Returns a comment in a format supported by Vader.
+
+    If a comment is unsuitable to be used False is returned."""
+    comment = remove_unrecognised_formatting(comment)
+    if (comment not in {"[removed]", "[deleted]"}
+        and "**Removed/tempban**" not in comment
+            and "**Removed/warning**" not in comment):
+        return comment
+    return False
+
+
 def get_comments_list(json_filename: str) -> list[str]:
     """Returns a list of comments from a file."""
     comment_list = []
@@ -142,10 +172,9 @@ def get_comments_list(json_filename: str) -> list[str]:
         find_comment = re.search(r"\"body\": \"(.+)\",", line)
         if find_comment:
             comment = find_comment.group(1)
-            if (comment not in {"[removed]", "[deleted]"}
-                and "**Removed/tempban**" not in comment
-                    and "**Removed/warning**" not in comment):
-                comment_list.append(find_comment.group(1))
+            cleaned_comment = clean_reddit_comments(comment)
+            if cleaned_comment:
+                comment_list.append(cleaned_comment)
     return comment_list
 
 
@@ -192,4 +221,4 @@ if __name__ == "__main__":  # pragma: no cover
 
     print(list_of_page_dict)
 
-    save_json_to_file(list_of_page_dict, "with_comments.json")
+    save_json_to_file(list_of_page_dict, "with_comments_2.json")
