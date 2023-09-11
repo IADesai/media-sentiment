@@ -1,34 +1,36 @@
-"""File that creates the visualizations for a report pdf of the media-sentiment findings"""
+"""File that creates the visualizations for a report pdf of the media-sentiment findings,
+then uploads the pdf to an s3 bucket and sends an email of the pdf."""
+
+
 import sys
-import base64
 from os import environ
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
+from datetime import datetime
 
 from dotenv import load_dotenv
 from psycopg2.extensions import connection
 from psycopg2 import connect, Error
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-import seaborn as sns
 from xhtml2pdf import pisa
 from boto3 import client
 
 
-PDF_FILE_NAME = "test.pdf"
+PDF_FILE_NAME = "Media-Sentiment.pdf"
 
 
 def join_all_stories_info(conn: connection) -> pd.DataFrame:
     "Function that joins the stories and story sources SQL tables"
-    query = """SELECT story_id, title, description,url, pub_date, media_sentiment, source_name FROM stories JOIN sources ON stories.source_id = sources.source_id"""
+    query = """SELECT story_id, title, description,url, pub_date, media_sentiment,
+    source_name FROM stories JOIN sources ON stories.source_id = sources.source_id"""
     with conn.cursor() as cur:
         cur.execute(query)
         tuples_list = cur.fetchall()
-    df = pd.DataFrame(tuples_list, columns=[
-                      "story_id", "title", "description", "url", "pub_date", "article_sentiment", "source_name"])
-    return df
+    stories_df = pd.DataFrame(tuples_list, columns=[
+        "story_id", "title", "description", "url", "pub_date",
+        "article_sentiment", "source_name"])
+    return stories_df
 
 
 def join_all_reddit_info(conn: connection) -> pd.DataFrame:
@@ -37,9 +39,11 @@ def join_all_reddit_info(conn: connection) -> pd.DataFrame:
     with conn.cursor() as cur:
         cur.execute(query)
         tuples_list = cur.fetchall()
-    df = pd.DataFrame(tuples_list, columns=["article_id", "domain", "title", "article_url", "url", "re_sentiment_mean", "re_sentiment_st_dev",
-                      "re_sentiment_median", "re_vote_score", "re_upvote_ratio", "re_post_comments", "re_processed_comments", "re_created_timestamp"])
-    return df
+    reddit_df = pd.DataFrame(tuples_list, columns=["article_id", "domain", "title", "article_url",
+                                                   "url", "re_sentiment_mean", "re_sentiment_st_dev",
+                                                   "re_sentiment_median", "re_vote_score", "re_upvote_ratio", "re_post_comments",
+                                                   "re_processed_comments", "re_created_timestamp"])
+    return reddit_df
 
 
 def get_db_connection():
@@ -68,7 +72,7 @@ def get_titles(titles) -> str:
     return title_str
 
 
-def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
+def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
     """Creates the HTML template for the report, including all visualizations as
     images within the html wrapper"""
 
@@ -222,9 +226,13 @@ def upload_to_s3() -> None:
     s3_client = client("s3", aws_access_key_id=environ.get("ACCESS_KEY"),
                        aws_secret_access_key=environ.get("SECRET_KEY"))
     print("Connection established.")
+    file_split = PDF_FILE_NAME.split(".")
+    date_time = datetime.now().strftime("%d\%m\%Y, %H:%M:%S")
+    file_split[0] += f"({date_time})"
+    file_name_with_date_and_time = ".".join(file_split)
     print("Uploading .pdf file.")
     s3_client.upload_file(
-        PDF_FILE_NAME, environ.get("ARCHIVE_BUCKET_NAME"), PDF_FILE_NAME)
+        PDF_FILE_NAME, environ.get("BUCKET_NAME"), file_name_with_date_and_time)
     print(".pdf file uploaded.")
 
 
@@ -254,36 +262,32 @@ def send_email(email_message: MIMEMultipart) -> None:  # pragma: no cover
     print("Sending email.")
     if not isinstance(email_message, MIMEMultipart):
         raise TypeError("Email message not supplied as expected.")
-    ses_client = boto3.client("ses", aws_access_key_id=environ.get("ACCESS_KEY"),
-                              aws_secret_access_key=environ.get("SECRET_KEY"))
+    ses_client = client("ses", aws_access_key_id=environ.get("ACCESS_KEY"),
+                        aws_secret_access_key=environ.get("SECRET_KEY"))
     ses_client.send_raw_email(Source=environ.get("EMAIL_SENDER"),
                               Destinations=[environ.get("EMAIL_RECIPIENT")],
                               RawMessage={"Data": email_message.as_string()})
     print("Email sent.")
 
 
-def delete_pdf() -> None:
-    """Function that deletes the pdf"""
-    os.remove(PDF_FILE_NAME)
-
-
-if __name__ == "__main__":
+def handler(event, context):
+    """Lambda handler function"""
 
     load_dotenv()
     db_conn = get_db_connection()
 
     joined_stories_df = join_all_stories_info(db_conn)
-    joined_stories_df.to_csv("testing_stories_join.csv", index=False)
 
     joined_reddit_df = join_all_reddit_info(db_conn)
-    joined_reddit_df.to_csv("testing_reddit_join.csv", index=False)
 
-    report_template = create_report(
-        db_conn, joined_stories_df, joined_reddit_df)
+    report_template = create_report(joined_stories_df, joined_reddit_df)
+
     convert_html_to_pdf(report_template)
 
     upload_to_s3()
 
     send_email(create_email_message())
 
-    delete_pdf()
+    return {
+        "status": "success"
+    }

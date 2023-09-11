@@ -13,5 +13,6 @@ The following environment variables must be supplied in a `.env` file.
 - `DATABASE_NAME`
 - `ACCESS_KEY`
 - `SECRET_KEY`
+- `BUCKET_NAME`
 - `EMAIL_SENDER`
 - `EMAIL_RECIPIENT`
