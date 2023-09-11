@@ -11,11 +11,10 @@ __pycache__
 *.html
 *.json
 *.pdf
+*.svg
 .DS_Store
 *.tfvars
 *.tfstate
 *.tfstate.backup
 *.terraform.lock.hcl
 *.terraform.tfstate.lock.info
-*.svg
-*.pdf

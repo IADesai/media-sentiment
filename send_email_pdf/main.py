@@ -2,6 +2,8 @@
 import sys
 import base64
 from os import environ
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 from dotenv import load_dotenv
 from psycopg2.extensions import connection
@@ -12,36 +14,10 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import seaborn as sns
 from xhtml2pdf import pisa
+from boto3 import client
 
 
-def join_all_sql_tables(conn: connection) -> pd.DataFrame:
-    """Joins all tables from SQL and returns it as a dataframe"""
-    query = """SELECT
-    p.id AS plant_id,
-    p.general_name,
-    p.scientific_name,
-    p.cycle,
-    p.botanist_id AS plant_botanist_id,
-    r.recorded,
-    r.temperature,
-    r.soil_moisture,
-    r.watered,
-    r.sunlight,
-    b.botanist_name 
-    FROM
-        plant p
-    LEFT JOIN
-        recording r ON p.id = r.plant_id
-    LEFT JOIN
-        botanist b ON p.botanist_id = b.id"""
-    with conn.cursor() as cur:
-        cur.execute(query)
-        tuples_list = cur.fetchall()
-    df = pd.DataFrame(tuples_list, columns=['plant_id', 'general_name',
-                                            'scientific_name', 'cycle', 'botanist_id', "recorded",
-                                            'temperature', "soil_moisture", "watered", "sunlight", "botanist_name"])
-
-    return df
+PDF_FILE_NAME = "test.pdf"
 
 
 def join_all_stories_info(conn: connection) -> pd.DataFrame:
@@ -219,14 +195,14 @@ def create_report(db_connection: connection, stories_data: pd.DataFrame, reddit_
     return template
 
 
-def convert_html_to_pdf(html_template: str, file: str) -> None:
+def convert_html_to_pdf(html_template: str) -> None:
     """Converts the HTML template provided into a pdf report file"""
     # open output file for writing (truncated binary)
     if not isinstance(html_template, str):
         raise ValueError("The HTML template should be provided as a string")
-    if not isinstance(file, str):
+    if not isinstance(PDF_FILE_NAME, str):
         raise ValueError("The file name should be provided as a string")
-    result_file = open(file, "w+b")
+    result_file = open(PDF_FILE_NAME, "w+b")
 
     # convert HTML to PDF
     pisa_status = pisa.CreatePDF(
@@ -240,7 +216,59 @@ def convert_html_to_pdf(html_template: str, file: str) -> None:
     return pisa_status.err
 
 
+def upload_to_s3() -> None:
+    """Function that uploads the created pdf to an s3 bucket"""
+    print("Establishing connection to AWS.")
+    s3_client = client("s3", aws_access_key_id=environ.get("ACCESS_KEY"),
+                       aws_secret_access_key=environ.get("SECRET_KEY"))
+    print("Connection established.")
+    print("Uploading .pdf file.")
+    s3_client.upload_file(
+        PDF_FILE_NAME, environ.get("ARCHIVE_BUCKET_NAME"), PDF_FILE_NAME)
+    print(".pdf file uploaded.")
+
+
+def create_email_attachment() -> MIMEApplication:  # pragma: no cover
+    """Loads a .pdf file as an email attachment."""
+    print("Loading .pdf attachment")
+    with open(PDF_FILE_NAME, "rb") as pdf_file:
+        pdf_attachment = MIMEApplication(pdf_file.read(), _subtype="pdf")
+        pdf_attachment.add_header("content-disposition", "attachment",
+                                  filename=PDF_FILE_NAME)
+    print(".pdf attachment loaded.")
+    return pdf_attachment
+
+
+def create_email_message() -> MIMEMultipart:  # pragma: no cover
+    """Creates an email message."""
+    print("Creating email message.")
+    message = MIMEMultipart()
+    message["Subject"] = "Media Sentiment PDF Report"
+    message.attach(create_email_attachment())
+    print("Email message created.")
+    return message
+
+
+def send_email(email_message: MIMEMultipart) -> None:  # pragma: no cover
+    """Sends an email with an attachment."""
+    print("Sending email.")
+    if not isinstance(email_message, MIMEMultipart):
+        raise TypeError("Email message not supplied as expected.")
+    ses_client = boto3.client("ses", aws_access_key_id=environ.get("ACCESS_KEY"),
+                              aws_secret_access_key=environ.get("SECRET_KEY"))
+    ses_client.send_raw_email(Source=environ.get("EMAIL_SENDER"),
+                              Destinations=[environ.get("EMAIL_RECIPIENT")],
+                              RawMessage={"Data": email_message.as_string()})
+    print("Email sent.")
+
+
+def delete_pdf() -> None:
+    """Function that deletes the pdf"""
+    os.remove(PDF_FILE_NAME)
+
+
 if __name__ == "__main__":
+
     load_dotenv()
     db_conn = get_db_connection()
 
@@ -252,4 +280,10 @@ if __name__ == "__main__":
 
     report_template = create_report(
         db_conn, joined_stories_df, joined_reddit_df)
-    convert_html_to_pdf(report_template, environ.get("REPORT_FILE"))
+    convert_html_to_pdf(report_template)
+
+    upload_to_s3()
+
+    send_email(create_email_message())
+
+    delete_pdf()
