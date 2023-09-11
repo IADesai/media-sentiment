@@ -17,8 +17,8 @@ CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 JSON_FILE = f'{CURRENT_TIMESTAMP}.json'
 
 
-def get_public_stories(conn) -> list | None:
-    """Queries RDS to return story title and id of stories that do not have keywords linked to them"""
+def get_media_stories(conn) -> list | None:
+    """Queries RDS to return story title and id that do not have keywords linked to them"""
 
     with conn.cursor() as cur:
         cur.execute(
@@ -27,6 +27,18 @@ def get_public_stories(conn) -> list | None:
         )
         stories = cur.fetchall()
         return stories if stories else None
+
+
+def get_reddit_stories(conn) -> list | None:
+    """Queries RDS to return reddit story title and id that do not have keywords linked to them"""
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT reddit_article.re_article_id, reddit_article.re_title FROM reddit_article LEFT JOIN reddit_keyword_link 
+            ON reddit_article.re_article_id = reddit_keyword_link.re_article_id WHERE reddit_keyword_link.re_article_id IS NULL ORDER BY RANDOM();"""
+        )
+        re_stories = cur.fetchall()
+        return re_stories if re_stories else None
 
 
 def separate_stories(stories_list: list) -> None:
@@ -41,7 +53,7 @@ def separate_stories(stories_list: list) -> None:
     yield twenty_stories if twenty_stories else None
 
 
-def make_openai_request(batch_stories_list):
+def make_openai_request(batch_stories_list: list[dict]) -> None:
     """Makes POST request to openai to retrieve three general topics per story"""
 
     openapi_url = 'https://api.openai.com/v1/chat/completions'
@@ -61,22 +73,22 @@ def make_openai_request(batch_stories_list):
         raise ConnectionError("Unable to make request", response.status_code)
 
 
-def read_response_json():
+def read_response_json(table: str):
     """Extracts openai response data from json file"""
 
-    with open(JSON_FILE, 'r') as f:
+    with open(f"{table}-{JSON_FILE}", 'r') as f:
         existing_response = json.load(f)
     return existing_response
 
 
-def create_response_json(openai_response: dict) -> None:
+def create_response_json(openai_response: dict, table: str, id: str) -> None:
     """Stores openai response in a json file"""
 
-    if not exists(JSON_FILE):
-        with open(JSON_FILE, 'a') as f:
+    if not exists(f"{table}-{JSON_FILE}"):
+        with open(f"{table}-{JSON_FILE}", 'a') as f:
             json.dump([openai_response], f, indent=4)
     else:
-        existing_response = read_response_json()
+        existing_response = read_response_json(table)
         existing_response.append(openai_response)
-        with open(JSON_FILE, 'w') as f:
+        with open(f"{table}-{JSON_FILE}", 'w') as f:
             json.dump(existing_response, f, indent=4)

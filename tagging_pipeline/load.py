@@ -9,6 +9,7 @@ import spacy
 from dotenv import load_dotenv
 
 CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+CURRENT_TIMESTAMP = "2023-09-11 10:54:39"
 CSV_FILE = f'{CURRENT_TIMESTAMP}.csv'
 
 
@@ -25,10 +26,10 @@ def db_connection() -> psycopg2.extensions.connection | None:
         raise psycopg2.DatabaseError("Error connecting to database.") from exc
 
 
-def create_keywords_df():
+def create_keywords_df(table: str):
     """Returns most recent csv file in topics folder"""
 
-    topics_df = pd.read_csv(CSV_FILE)
+    topics_df = pd.read_csv(f"{table}-{CSV_FILE}")
     return topics_df
 
 
@@ -61,8 +62,8 @@ def populate_keywords_table(conn: psycopg2.extensions.connection, keyword) -> in
 #         match = cur.fetchone()
 #     return match if match else None
 
-def get_common_keywords(conn):
-    """Retrieves commonly used keywords from RDS"""
+def get_media_common_keywords(conn) -> list:
+    """Retrieves commonly used media story keywords from RDS"""
     with conn.cursor() as cur:
         cur.execute("""SELECT keywords.keyword_id, keywords.keyword, COUNT(sl.keyword_id)
                     FROM keywords
@@ -73,14 +74,31 @@ def get_common_keywords(conn):
     return common_keywords
 
 
-def compare_common_keywords(keyword, common_keywords):
+def get_reddit_common_keywords(conn) -> list:
+    """Retrieves commonly used reddit story keywords from RDS"""
+    with conn.cursor() as cur:
+        cur.execute("""SELECT keywords.keyword_id, keywords.keyword, COUNT(rkl.keyword_id)
+                    FROM keywords
+                    LEFT JOIN reddit_keyword_link rkl ON keywords.keyword_id = rkl.keyword_id
+                    LEFT JOIN reddit_article ra ON rkl.re_article_id = ra.re_article_id
+                    GROUP BY keywords.keyword_id, keywords.keyword
+                    HAVING COUNT(rkl.keyword_id) > 5;""")
+        common_keywords = cur.fetchall()
+    return common_keywords
+
+
+def compare_common_keywords(keyword: str, common_keywords: list) -> str | None:
     """Compares new keyword with common keyword to determine if they are within the same category for topics"""
+    nlp = spacy.load('en_core_web_lg')
     for common_keyword in common_keywords:
-        if nlp(keyword).similarity(nlp(common_keyword['keyword'])) >= 0.7:
-            return common_keyword['keyword']
+        try:
+            if nlp(keyword).similarity(nlp(common_keyword['keyword'])) >= 0.65:
+                return common_keyword['keyword']
+        except ValueError:
+            return
 
 
-def get_keyword_id(conn, keyword) -> int | None:
+def get_keyword_id(conn, keyword: str) -> int | None:
     """Queries RDS to retrieve keyword_id for the associated keyword else inserts keyword into RDS"""
     try:
         with conn.cursor() as cur:
@@ -88,10 +106,6 @@ def get_keyword_id(conn, keyword) -> int | None:
                 """SELECT keyword_id FROM keywords WHERE keyword = (%s);""", [keyword])
             keyword_id = cur.fetchone()
         if not keyword_id:
-            common_keywords = get_common_keywords(conn)
-            matched_keyword = compare_common_keywords(keyword,common_keywords)
-            if matched_keyword:
-                return matched_keyword
             keyword_id = populate_keywords_table(conn, keyword)
         return keyword_id['keyword_id']
 
@@ -99,7 +113,7 @@ def get_keyword_id(conn, keyword) -> int | None:
         print('Error retrieving keyword id from database', keyword)
 
 
-def populate_keywords_link_table(conn: psycopg2.extensions.connection, story_id, keyword_id) -> None:
+def populate_media_keywords_link_table(conn: psycopg2.extensions.connection, story_id, keyword_id) -> None:
     """Inserts story id and keyword id into the story_keywords_link_table to link stories to keywords"""
     try:
         with conn.cursor() as cur:
@@ -111,7 +125,19 @@ def populate_keywords_link_table(conn: psycopg2.extensions.connection, story_id,
         conn.rollback()
 
 
-def load_keywords_df_into_rds(conn, keywords_df) -> None:
+def populate_reddit_link_table(conn: psycopg2.extensions.connection, story_id, keyword_id) -> None:
+    """Inserts story id and keyword id into the story_keywords_link_table to link stories to keywords"""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""INSERT INTO reddit_keyword_link (re_article_id,keyword_id) VALUES (%s,%s);""", [
+                        story_id, keyword_id])
+            conn.commit()
+    except psycopg2.errors.UniqueViolation:
+        print('Duplicate data was not inserted:', story_id, keyword_id)
+        conn.rollback()
+
+
+def load_media_keywords_df_into_rds(conn, keywords_df) -> None:
     """Loads each row of the dataframe, containing story id and associated topics into the RDS"""
     for index, row in keywords_df.iterrows():
         story_id = row['story_id']
@@ -119,11 +145,26 @@ def load_keywords_df_into_rds(conn, keywords_df) -> None:
         keyword_two = get_keyword_id(conn, row['topic_two'])
         keyword_three = get_keyword_id(conn, row['topic_three'])
         if keyword_one:
-            populate_keywords_link_table(conn, story_id, keyword_one)
+            populate_media_keywords_link_table(conn, story_id, keyword_one)
         if keyword_two:
-            populate_keywords_link_table(conn, story_id, keyword_two)
+            populate_media_keywords_link_table(conn, story_id, keyword_two)
         if keyword_three:
-            populate_keywords_link_table(conn, story_id, keyword_three)
+            populate_media_keywords_link_table(conn, story_id, keyword_three)
+
+
+def load_reddit_keywords_df_into_rds(conn, keywords_df) -> None:
+    """Loads each row of the dataframe, containing story id and associated topics into the RDS"""
+    for index, row in keywords_df.iterrows():
+        article_id = row['re_article_id']
+        keyword_one = get_keyword_id(conn, row['topic_one'])
+        keyword_two = get_keyword_id(conn, row['topic_two'])
+        keyword_three = get_keyword_id(conn, row['topic_three'])
+        if keyword_one:
+            populate_reddit_link_table(conn, article_id, keyword_one)
+        if keyword_two:
+            populate_reddit_link_table(conn, article_id, keyword_two)
+        if keyword_three:
+            populate_reddit_link_table(conn, article_id, keyword_three)
 
 
 if __name__ == "__main__":
@@ -131,5 +172,6 @@ if __name__ == "__main__":
     nlp = spacy.load('en_core_web_lg')
 
     connection = db_connection()
-    common_keywords = get_common_keywords(connection)
-    print(compare_common_keywords('Finances', common_keywords))
+    reddit_df = create_keywords_df('reddit')
+    load_reddit_keywords_df_into_rds(connection, reddit_df)
+    connection.close()

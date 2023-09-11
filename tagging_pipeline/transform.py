@@ -41,19 +41,34 @@ def get_story_topics(responses_list: list[dict]) -> list[dict]:
     return valid_stories
 
 
-def create_topic_csv(valid_stories):
-    """Stores story topics in a csv file"""
+def create_topic_csv(valid_stories,table,id):
+    """Stores media story topics in a csv file"""
     response_df = pd.DataFrame(
-        columns=['story_id', 'topic_one', 'topic_two', 'topic_three'])
+        columns=[id, 'topic_one', 'topic_two', 'topic_three'])
     for story_dict in valid_stories:
         for story_id, story_topics in story_dict.items():
             if isinstance(story_topics, list):
                 while len(story_topics) < 3:
                     story_topics.append("UNTAGGED")
-                new_row = {'story_id': story_id,
+                new_row = {id: story_id,
                            'topic_one': story_topics[0], 'topic_two': story_topics[1], 'topic_three': story_topics[2]}
                 response_df.loc[len(response_df)] = new_row
-    response_df.to_csv(f'{CURRENT_TIMESTAMP}.csv', index=False)
+    response_df.to_csv(f'{table}-{CURRENT_TIMESTAMP}.csv', index=False)
+
+
+def create_reddit_topic_csv(valid_stories):
+    """Stores reddit story topics in a csv file"""
+    response_df = pd.DataFrame(
+        columns=['re_article_id', 'topic_one', 'topic_two', 'topic_three'])
+    for story_dict in valid_stories:
+        for story_id, story_topics in story_dict.items():
+            if isinstance(story_topics, list):
+                while len(story_topics) < 3:
+                    story_topics.append("UNTAGGED")
+                new_row = {'re_article_id': story_id,
+                           'topic_one': story_topics[0], 'topic_two': story_topics[1], 'topic_three': story_topics[2]}
+                response_df.loc[len(response_df)] = new_row
+    response_df.to_csv(f'reddit-{CURRENT_TIMESTAMP}.csv', index=False)
 
 
 # def read_topics_csv():
@@ -120,7 +135,6 @@ def create_topic_csv(valid_stories):
 # def loop_relevant_topics(relevant_topics):
 #     for topic in relevant_topics:
 #         return find_synset_for_topic(topic)
-
 
 if __name__ == "__main__":
     nlp = spacy.load('en_core_web_lg')
