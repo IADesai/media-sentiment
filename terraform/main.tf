@@ -416,7 +416,11 @@ resource "aws_lambda_function" "media-sentiment-email-lambda" {
   image_uri     = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-email-ecr:latest"
   architectures = ["x86_64"]
   package_type  = "Image"
-  timeout = 120
+  memory_size = 256
+  ephemeral_storage {
+    size = 512
+  }
+  timeout = 300
   environment {
     variables = {
       INITIAL_DATABASE  = var.initial_database

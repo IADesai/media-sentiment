@@ -1,11 +1,9 @@
 pylint
 pytest
 plotly
-matplotlib
-psycopg2
+psycopg2-binary
 python-dotenv
 pandas
-kaleido
 xhtml2pdf
 boto3
-seaborn
+kaleido

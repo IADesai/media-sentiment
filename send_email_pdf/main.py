@@ -18,9 +18,10 @@ from boto3 import client
 
 
 PDF_FILE_NAME = "Media-Sentiment.pdf"
+PDF_FILE_PATH = "/tmp/Media-Sentiment.pdf"
 
 
-def join_all_stories_info(conn: connection) -> pd.DataFrame:
+def join_all_stories_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
     "Function that joins the stories and story sources SQL tables"
     query = """SELECT story_id, title, description,url, pub_date, media_sentiment,
     source_name FROM stories JOIN sources ON stories.source_id = sources.source_id"""
@@ -33,7 +34,7 @@ def join_all_stories_info(conn: connection) -> pd.DataFrame:
     return stories_df
 
 
-def join_all_reddit_info(conn: connection) -> pd.DataFrame:
+def join_all_reddit_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
     "Function that joins all reddit sources SQL tables"
     query = """SELECT * FROM reddit_article"""
     with conn.cursor() as cur:
@@ -47,7 +48,7 @@ def join_all_reddit_info(conn: connection) -> pd.DataFrame:
     return reddit_df
 
 
-def get_db_connection():
+def get_db_connection():   # pragma: no cover
     """Establishes a connection with the PostgreSQL database."""
     try:
         conn = connect(
@@ -115,7 +116,7 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
                                 "width": 3}},
                'bgcolor': "white"},
         title={'text': "BBC Average Sentiment"}))
-    bbc_fig.write_image("bbc_plot.svg")
+    bbc_fig.write_image("/tmp/bbc_plot.svg")
 
     daily_mail_fig = go.Figure(go.Indicator(
         mode="gauge+number+delta",
@@ -127,7 +128,7 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
                                 "width": 3}},
                'bgcolor': "white"},
         title={'text': "Daily Mail Average Sentiment"}))
-    daily_mail_fig.write_image("daily_mail_plot.svg")
+    daily_mail_fig.write_image("/tmp/daily_mail_plot.svg")
 
     template = f'''
 <html>
@@ -164,8 +165,8 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
 
 <div class="widget">
     <div class="sentiment-container">
-        <img style="width: 300px; height: 200px" src = "bbc_plot.svg" alt="BBC"/>
-        <img style="width: 300px; height: 200px" src = "daily_mail_plot.svg" alt="Daily Mail"/>
+        <img style="width: 300px; height: 200px" src = "/tmp/bbc_plot.svg" alt="BBC"/>
+        <img style="width: 300px; height: 200px" src = "/tmp/daily_mail_plot.svg" alt="Daily Mail"/>
     </div>
 </div>
 
@@ -196,14 +197,12 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
     return template
 
 
-def convert_html_to_pdf(html_template: str) -> None:
+def convert_html_to_pdf(html_template: str) -> None:   # pragma: no cover
     """Converts the HTML template provided into a pdf report file"""
     # open output file for writing (truncated binary)
     if not isinstance(html_template, str):
         raise ValueError("The HTML template should be provided as a string")
-    if not isinstance(PDF_FILE_NAME, str):
-        raise ValueError("The file name should be provided as a string")
-    result_file = open(PDF_FILE_NAME, "w+b")
+    result_file = open(PDF_FILE_PATH, "w+b")
 
     # convert HTML to PDF
     pisa_status = pisa.CreatePDF(
@@ -217,7 +216,7 @@ def convert_html_to_pdf(html_template: str) -> None:
     return pisa_status.err
 
 
-def upload_to_s3() -> None:
+def upload_to_s3() -> None:   # pragma: no cover
     """Function that uploads the created pdf to an s3 bucket"""
     print("Establishing connection to AWS.")
     s3_client = client("s3", aws_access_key_id=environ.get("ACCESS_KEY"),
@@ -229,14 +228,14 @@ def upload_to_s3() -> None:
     file_name_with_date_and_time = ".".join(file_split)
     print("Uploading .pdf file.")
     s3_client.upload_file(
-        PDF_FILE_NAME, environ.get("BUCKET_NAME"), file_name_with_date_and_time)
+        PDF_FILE_PATH, environ.get("BUCKET_NAME"), file_name_with_date_and_time)
     print(".pdf file uploaded.")
 
 
 def create_email_attachment() -> MIMEApplication:  # pragma: no cover
     """Loads a .pdf file as an email attachment."""
     print("Loading .pdf attachment")
-    with open(PDF_FILE_NAME, "rb") as pdf_file:
+    with open(PDF_FILE_PATH, "rb") as pdf_file:
         pdf_attachment = MIMEApplication(pdf_file.read(), _subtype="pdf")
         pdf_attachment.add_header("content-disposition", "attachment",
                                   filename=PDF_FILE_NAME)
@@ -274,12 +273,16 @@ def handler(event, context):
     db_conn = get_db_connection()
 
     joined_stories_df = join_all_stories_info(db_conn)
+    print("joined_stories_works")
 
     joined_reddit_df = join_all_reddit_info(db_conn)
+    print("joined_reddit_works")
 
     report_template = create_report(joined_stories_df, joined_reddit_df)
+    print("report_template_works")
 
     convert_html_to_pdf(report_template)
+    print("convert_to_pdf_works")
 
     upload_to_s3()
 
