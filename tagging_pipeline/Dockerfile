@@ -1,6 +1,4 @@
-FROM public.ecr.aws/lambda/python
-
-WORKDIR ${LAMBDA_TASK_ROOT}
+FROM python
 
 COPY requirements.txt .
 
@@ -14,5 +12,5 @@ COPY load.py .
 
 COPY pipeline.py .
 
-CMD ["pipeline.lambda_handler"]
+CMD python3 pipeline.py
 

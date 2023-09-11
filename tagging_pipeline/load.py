@@ -1,3 +1,5 @@
+"""Inserts keywords from keyword and story data into the keywords, reddit_keyword_link and story_keyword_link tables of RDS"""
+
 from os import environ
 from datetime import datetime
 
@@ -6,33 +8,17 @@ import psycopg2
 from psycopg2 import extras
 import spacy
 
-from dotenv import load_dotenv
-
 CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 CSV_FILE = f'{CURRENT_TIMESTAMP}.csv'
 
 
-def db_connection() -> psycopg2.extensions.connection | None:
-    """Establish connection with the media-sentiment RDS"""
-    try:
-        return psycopg2.connect(dbname=environ["DATABASE_NAME"],
-                                user=environ["DATABASE_USERNAME"],
-                                host=environ["DATABASE_ENDPOINT"],
-                                password=environ["DATABASE_PASSWORD"],
-                                cursor_factory=psycopg2.extras.RealDictCursor)
-
-    except Exception as exc:
-        raise psycopg2.DatabaseError("Error connecting to database.") from exc
-
-
-def create_keywords_df(table: str):
+def create_keywords_df(table: str) -> pd.DataFrame:
     """Returns most recent csv file in topics folder"""
-
     topics_df = pd.read_csv(f"{table}-{CSV_FILE}")
     return topics_df
 
 
-def populate_keywords_table(conn: psycopg2.extensions.connection, keyword) -> int:
+def populate_keywords_table(conn: psycopg2.extensions.connection, keyword: str) -> dict | None:
     """Inserts keywords into the keywords table of the RDS"""
     try:
         with conn.cursor() as cur:
@@ -44,22 +30,9 @@ def populate_keywords_table(conn: psycopg2.extensions.connection, keyword) -> in
             return keyword_id
 
     except psycopg2.errors.UniqueViolation:
-
         print('Duplicate data was not inserted:', keyword)
         conn.rollback()
 
-
-# def match_keywords_from_RDS(conn, keyword):
-#     """Checks if keyword can be matched with any keywords in RDS and returns most frequently used one"""
-#     with conn.cursor() as cur:
-#         cur.execute("""SELECT keyword.keyword FROM story_keyword_link link
-#                     JOIN keywords keyword ON link.keyword_id = keyword.keyword_id
-#                     WHERE keyword.keyword LIKE (%s)
-#                     GROUP BY keyword.keyword
-#                     ORDER BY COUNT(link.keyword_id) DESC
-#                     LIMIT 1;""", [keyword + '%'])
-#         match = cur.fetchone()
-#     return match if match else None
 
 def get_media_common_keywords(conn) -> list:
     """Retrieves commonly used media story keywords from RDS"""
@@ -112,7 +85,7 @@ def get_keyword_id(conn, keyword: str) -> int | None:
         print('Error retrieving keyword id from database', keyword)
 
 
-def populate_media_keywords_link_table(conn: psycopg2.extensions.connection, story_id, keyword_id) -> None:
+def populate_media_keywords_link_table(conn, story_id: int, keyword_id: int) -> None:
     """Inserts story id and keyword id into the story_keywords_link_table to link stories to keywords"""
     try:
         with conn.cursor() as cur:
@@ -124,7 +97,7 @@ def populate_media_keywords_link_table(conn: psycopg2.extensions.connection, sto
         conn.rollback()
 
 
-def populate_reddit_link_table(conn: psycopg2.extensions.connection, story_id, keyword_id) -> None:
+def populate_reddit_link_table(conn, story_id: int, keyword_id: int) -> None:
     """Inserts story id and keyword id into the story_keywords_link_table to link stories to keywords"""
     try:
         with conn.cursor() as cur:
@@ -136,7 +109,7 @@ def populate_reddit_link_table(conn: psycopg2.extensions.connection, story_id, k
         conn.rollback()
 
 
-def load_media_keywords_df_into_rds(conn, keywords_df) -> None:
+def load_media_keywords_df_into_rds(conn, keywords_df: pd.DataFrame) -> None:
     """Loads each row of the dataframe, containing story id and associated topics into the RDS"""
     for index, row in keywords_df.iterrows():
         story_id = row['story_id']
@@ -151,7 +124,7 @@ def load_media_keywords_df_into_rds(conn, keywords_df) -> None:
             populate_media_keywords_link_table(conn, story_id, keyword_three)
 
 
-def load_reddit_keywords_df_into_rds(conn, keywords_df) -> None:
+def load_reddit_keywords_df_into_rds(conn, keywords_df: pd.DataFrame) -> None:
     """Loads each row of the dataframe, containing story id and associated topics into the RDS"""
     for index, row in keywords_df.iterrows():
         article_id = row['re_article_id']
@@ -164,13 +137,3 @@ def load_reddit_keywords_df_into_rds(conn, keywords_df) -> None:
             populate_reddit_link_table(conn, article_id, keyword_two)
         if keyword_three:
             populate_reddit_link_table(conn, article_id, keyword_three)
-
-
-if __name__ == "__main__":
-    load_dotenv()
-    nlp = spacy.load('en_core_web_lg')
-
-    connection = db_connection()
-    reddit_df = create_keywords_df('reddit')
-    load_reddit_keywords_df_into_rds(connection, reddit_df)
-    connection.close()

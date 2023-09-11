@@ -4,6 +4,6 @@ pylint
 pytest
 openai
 requests
-nltk
-gensim
+boto3
+pandas
 spacy

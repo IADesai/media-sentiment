@@ -19,7 +19,6 @@ JSON_FILE = f'{CURRENT_TIMESTAMP}.json'
 
 def get_media_stories(conn) -> list | None:
     """Queries RDS to return story title and id that do not have keywords linked to them"""
-
     with conn.cursor() as cur:
         cur.execute(
             """SELECT stories.story_id, stories.title FROM stories LEFT JOIN story_keyword_link 
@@ -31,7 +30,6 @@ def get_media_stories(conn) -> list | None:
 
 def get_reddit_stories(conn) -> list | None:
     """Queries RDS to return reddit story title and id that do not have keywords linked to them"""
-
     with conn.cursor() as cur:
         cur.execute(
             """SELECT reddit_article.re_article_id, reddit_article.re_title FROM reddit_article LEFT JOIN reddit_keyword_link 
@@ -43,7 +41,6 @@ def get_reddit_stories(conn) -> list | None:
 
 def separate_stories(stories_list: list) -> None:
     """Stores maximum of 50 stories into lists to be passed into functions"""
-
     twenty_stories = []
     for story in stories_list:
         twenty_stories.append(dict(story))
@@ -55,7 +52,6 @@ def separate_stories(stories_list: list) -> None:
 
 def make_openai_request(batch_stories_list: list[dict]) -> None:
     """Makes POST request to openai to retrieve three general topics per story"""
-
     openapi_url = 'https://api.openai.com/v1/chat/completions'
     headers = {
         "Content-Type": "application/json",
@@ -75,7 +71,6 @@ def make_openai_request(batch_stories_list: list[dict]) -> None:
 
 def read_response_json(table: str):
     """Extracts openai response data from json file"""
-
     with open(f"{table}-{JSON_FILE}", 'r') as f:
         existing_response = json.load(f)
     return existing_response
