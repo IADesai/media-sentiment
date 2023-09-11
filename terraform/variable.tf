@@ -81,3 +81,7 @@ variable "email_sender" {
 variable "email_recipient" {
   description = "Email address of recipient"
 }
+
+variable "openai_api_key" {
+  description = "OpenAI key to access the OpenAI API"
+}

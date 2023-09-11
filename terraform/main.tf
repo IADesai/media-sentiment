@@ -356,15 +356,15 @@ resource "aws_ecs_task_definition" "media-sentiment-article-sentiment-ecs" {
           "value" : var.database_username
         },
         {
-          "name" : "DATABASE_IP",
+          "name" : "DATABASE_ENDPOINT",
           "value" : aws_db_instance.media-sentiment-rds.address
         },
         {
-          "name" : "ACCESS_KEY",
+          "name" : "ACCESS_KEY_ID",
           "value" : var.access_key
         },
         {
-          "name" : "SECRET_KEY",
+          "name" : "SECRET_ACCESS_KEY",
           "value" : var.secret_key
         },
         {
@@ -374,7 +374,12 @@ resource "aws_ecs_task_definition" "media-sentiment-article-sentiment-ecs" {
         {
           "name" : "DATABASE_PASSWORD",
           "value" : var.database_password
-      }]
+        },
+        {
+          "name" : "OPENAI_API_KEY",
+          "value" : var.openai_api_key
+        }
+      ]
     }
   ])
 }
