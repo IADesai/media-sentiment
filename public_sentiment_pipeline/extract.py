@@ -3,11 +3,15 @@
 import json
 from datetime import datetime
 import re
+import os
 
 import requests
 from dotenv import dotenv_values
 from boto3 import client
 from pytz import timezone
+
+MAX_REDDIT_PAGES = 40
+MAX_REDDIT_COMMENTS = 500
 
 REDDIT_URL = "https://oauth.reddit.com/r/"
 SUBREDDIT_URL = "https://oauth.reddit.com/"
@@ -17,6 +21,12 @@ REDDIT_TITLE_KEY = "title"
 REDDIT_SUBREDDIT_URL = "subreddit_url"
 REDDIT_ARTICLE_URL = "article_url"
 REDDIT_ARTICLE_DOMAIN = "article_domain"
+REDDIT_ARTICLE_SCORE = "score"
+REDDIT_UPVOTE_RATIO = "upvote_ratio"
+REDDIT_POST_COMMENTS = "comment_count"
+REDDIT_INCLUDED_COMMENTS = "included_comment_count"
+REDDIT_CREATED_UTC = "creation_timestamp"
+REDDIT_COMMENTS = "comments"
 
 
 def get_reddit_access_token(config: dict) -> dict:
@@ -43,8 +53,10 @@ def get_subreddit_json(config: dict, reddit_access_token: str) -> dict:
     print(f"Fetching data from the {subreddit} subreddit.")
     auth_headers = {"Authorization": f"bearer {reddit_access_token}",
                     "User-Agent": "Media-Sentiment/0.1 by Media-Project"}
+    parameters = {"limit": MAX_REDDIT_PAGES}
 
-    response = requests.get(f"{REDDIT_URL}{subreddit}", headers=auth_headers)
+    response = requests.get(f"{REDDIT_URL}{subreddit}/new",
+                            headers=auth_headers, params=parameters)
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned. Code: {response.status_code}")
@@ -62,6 +74,11 @@ def create_pages_list(reddit_json: dict) -> list[dict]:
             page_dict[REDDIT_SUBREDDIT_URL] = page["data"]["permalink"]
             page_dict[REDDIT_ARTICLE_URL] = page["data"]["url"]
             page_dict[REDDIT_ARTICLE_DOMAIN] = page["data"]["domain"]
+            page_dict[REDDIT_ARTICLE_SCORE] = page["data"]["score"]
+            page_dict[REDDIT_UPVOTE_RATIO] = page["data"]["upvote_ratio"]
+            page_dict[REDDIT_POST_COMMENTS] = page["data"]["num_comments"]
+            page_dict[REDDIT_CREATED_UTC] = datetime.strftime(
+                datetime.fromtimestamp(page["data"]["created_utc"]), "%Y-%m-%d %H:%M:%S")
             pages_list.append(page_dict)
         except KeyError:
             print("Missing attribute. Skipping entry.")
@@ -89,8 +106,8 @@ def save_json_to_file(json_contents: dict, json_filename: str) -> None:  # pragm
 
 def upload_json_s3(config: dict, json_filename: str) -> None:  # pragma: no cover
     """Uploads a JSON file to an S3 bucket."""
-    s3_client = client("s3", aws_access_key_id=config["ACCESS_KEY_ID"],
-                       aws_secret_access_key=config["SECRET_ACCESS_KEY"])
+    s3_client = client("s3", aws_access_key_id=config["ACCESS_KEY"],
+                       aws_secret_access_key=config["SECRET_KEY"])
     s3_client.upload_file(
         json_filename, config["REDDIT_JSON_BUCKET_NAME"], json_filename)
 
@@ -99,8 +116,10 @@ def get_json_from_request(subreddit_url: str, reddit_access_token: str) -> dict:
     """Returns the contents of a subreddit page GET request."""
     auth_headers = {"Authorization": f"bearer {reddit_access_token}",
                     "User-Agent": "Media-Sentiment/0.1 by Media-Project"}
+    parameters = {"limit": MAX_REDDIT_COMMENTS, "show": "all"}
 
-    response = requests.get(subreddit_url, headers=auth_headers)
+    response = requests.get(
+        subreddit_url, headers=auth_headers, params=parameters)
     if response.status_code != 200:
         raise ConnectionError(
             f"Unexpected non-200 status code returned for the url: {subreddit_url}. " +
@@ -144,12 +163,23 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
                 SUBREDDIT_URL+page[REDDIT_SUBREDDIT_URL], reddit_access_token)
             save_json_to_file(page_json, json_filename)
             upload_json_s3(config, json_filename)
-            page["comments"] = get_comments_list(json_filename)
+            page[REDDIT_COMMENTS] = get_comments_list(json_filename)
+            page[REDDIT_INCLUDED_COMMENTS] = len(page[REDDIT_COMMENTS])
             response_list.append(page)
         except (ConnectionError, AttributeError) as err:
             print(err)
     print("Fetch of each subreddit page complete.")
     return response_list
+
+
+def run_extract() -> list[dict]:  # pragma: no cover
+    """Returns a list of dictionaries for each page in a subreddit."""
+    configuration = os.environ
+    reddit_token = get_reddit_access_token(configuration)
+    reddit_json = get_subreddit_json(configuration, reddit_token)
+    list_of_json = create_pages_list(reddit_json)
+    return process_each_reddit_page(
+        list_of_json, reddit_token, configuration)
 
 
 if __name__ == "__main__":  # pragma: no cover

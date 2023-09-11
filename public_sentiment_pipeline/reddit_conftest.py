@@ -1,5 +1,7 @@
 """Contains useful properties for the unit tests"""
 
+# pylint: skip-file
+
 import pytest
 
 
@@ -28,19 +30,31 @@ def fake_subreddit_json():
                     "title": "a",
                     "permalink": "b",
                     "url": "c",
-                    "domain": "d"
+                    "domain": "d",
+                    "score": 100,
+                    "upvote_ratio": 0.6,
+                    "num_comments": 10,
+                    "created_utc": 1693809634.0
                 }},
                 {"data": {
                     "title": "e",
                     "permalink": "f",
                     "url": "g",
-                    "domain": "h"
+                    "domain": "h",
+                    "score": 200,
+                    "upvote_ratio": 0.35,
+                    "num_comments": 125,
+                    "created_utc": 1693809635.0
                 }},
                 {"data": {
                     "title": "i",
                     "permalink": "j",
                     "url": "k",
-                    "domain": "l"
+                    "domain": "l",
+                    "score": 15,
+                    "upvote_ratio": 0.12345,
+                    "num_comments": 12345,
+                    "created_utc": 1693809636.0
                 }}
             ]
         }
@@ -56,33 +70,57 @@ def fake_subreddit_json_missing_entries():
                     "title": "a",
                     "permalink": "b",
                     "url": "c",
-                    "domain": "d"
+                    "domain": "d",
+                    "score": 100,
+                    "upvote_ratio": 0.6,
+                    "num_comments": 10,
+                    "created_utc": 1693809634.0
                 }},
                 {"data": {
                     "title": "e",
                     "url": "g",
-                    "domain": "h"
+                    "domain": "h",
+                    "score": 100,
+                    "upvote_ratio": 0.6,
+                    "num_comments": 10,
+                    "created_utc": 1693809634.0
                 }},
                 {"data": {
                     "permalink": "j",
                     "url": "k",
-                    "domain": "l"
+                    "domain": "l",
+                    "score": 100,
+                    "upvote_ratio": 0.6,
+                    "num_comments": 10,
+                    "created_utc": 1693809634.0
                 }},
                 {"data": {
                     "title": "m",
                     "permalink": "o",
-                    "domain": "p"
+                    "domain": "p",
+                    "score": 100,
+                    "upvote_ratio": 0.6,
+                    "num_comments": 10,
+                    "created_utc": 1693809634.0
                 }},
                 {"data": {
                     "title": "q",
                     "permalink": "r",
                     "url": "s",
+                    "score": 100,
+                    "upvote_ratio": 0.6,
+                    "num_comments": 10,
+                    "created_utc": 1693809634.0
                 }},
                 {"data": {
                     "title": "t",
                     "permalink": "u",
                     "url": "v",
-                    "domain": "w"
+                    "domain": "w",
+                    "score": 100,
+                    "upvote_ratio": 0.6,
+                    "num_comments": 10,
+                    "created_utc": 1693809634.0
                 }}
             ]
         }
@@ -127,3 +165,8 @@ def fake_json_content_2():
             '                        "can_gild": true,',
             '                        "body": "**Removed/warning**",',
             '                        "collapsed": false,']
+
+
+@pytest.fixture
+def fake_page_response_list():
+    return [{"title": "a", "subreddit_url": "b", "article_url": "c", "article_domain": "d", "comments": ["a", "b"]}, {"title": "e", "subreddit_url": "f", "article_url": "g", "article_domain": "h", "comments": ["c", "d"]}]
