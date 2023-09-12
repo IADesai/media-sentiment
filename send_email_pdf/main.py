@@ -210,9 +210,6 @@ def convert_html_to_pdf(html_template: str) -> bool:   # pragma: no cover
     with open(PDF_FILE_PATH, "w+b") as pdf:
         pisa_status = pisa.CreatePDF(html_template, dest=pdf)
 
-    with open(PDF_FILE_NAME, "w+b") as pdf:
-        pisa_status = pisa.CreatePDF(html_template, dest=pdf)
-
     # return True on success and False on errors
     return pisa_status.err
 
@@ -292,6 +289,3 @@ def handler(event, context):
     return {
         "status": "success"
     }
-
-
-handler(0, 1)
