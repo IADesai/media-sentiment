@@ -19,6 +19,8 @@ from boto3 import client
 
 PDF_FILE_NAME = "Media-Sentiment.pdf"
 PDF_FILE_PATH = "/tmp/Media-Sentiment.pdf"
+GREEN = "#199988"
+RED = "#e15759"
 
 
 def join_all_stories_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
@@ -74,6 +76,30 @@ def get_titles(titles) -> str:
     return title_str
 
 
+def create_gauge_figure(data, source: str, filename: str, line_color: str) -> None:  # pragma: no cover
+    """Creates a formatted gauge figure saved as a .svg file."""
+    gauge_fig = go.Figure(go.Indicator(
+        mode="gauge+number+delta",
+        value=data,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        gauge={'axis': {'range': [-1, 1], 'tickfont': {"family": "Arial", "size": 24}},
+               'bar': {'color': line_color,
+                       'line': {"color": "white",
+                                "width": 3}},
+               'bgcolor': "white"},
+        title={'text': f"{source} Average Sentiment", "font": {"family": "Arial", "size": 32}}))
+    gauge_fig.update_layout(font={"family": "Arial"})
+    gauge_fig.write_image(filename)
+
+
+def choose_line_color(score: float) -> str:
+    """Returns the color of the gauge plot according to a sentiment score."""
+    if score >= 0:
+        return GREEN
+    if score < 0:
+        return RED
+
+
 def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
     """Creates the HTML template for the report, including all visualizations as
     images within the html wrapper"""
@@ -96,41 +122,17 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
     stories_sources_average = stories_data.groupby(
         "source_name")["article_sentiment"].mean().__round__(2)
 
-    if stories_sources_average.iloc[0] > 0:
-        bbc_line_color = "lightgreen"
-    if stories_sources_average.iloc[0] < 0:
-        bbc_line_color = "#FF7276"
+    bbc_sentiment_score = stories_sources_average.iloc[0]
+    daily_mail_sentiment_score = stories_sources_average.iloc[1]
 
-    if stories_sources_average.iloc[1] > 0:
-        daily_mail_line_color = "lightgreen"
-    if stories_sources_average.iloc[1] < 0:
-        daily_mail_line_color = "#FF7276"
+    bbc_line_color = choose_line_color(bbc_sentiment_score)
+    daily_mail_line_color = choose_line_color(daily_mail_sentiment_score)
 
-    bbc_fig = go.Figure(go.Indicator(
-        mode="gauge+number+delta",
-        value=stories_sources_average.iloc[0],
-        domain={'x': [0, 1], 'y': [0, 1]},
-        gauge={'axis': {'range': [-1, 1], 'tickfont': {"family": "Arial", "size": 24}},
-               'bar': {'color': bbc_line_color,
-                       'line': {"color": "white",
-                                "width": 3}},
-               'bgcolor': "white"},
-        title={'text': "BBC Average Sentiment", "font": {"family": "Arial", "size": 32}}))
-    bbc_fig.update_layout(font={"family": "Arial"})
-    bbc_fig.write_image("/tmp/bbc_plot.svg")
+    create_gauge_figure(
+        bbc_sentiment_score, "BBC", "/tmp/bbc_plot.svg", bbc_line_color)
 
-    daily_mail_fig = go.Figure(go.Indicator(
-        mode="gauge+number+delta",
-        value=stories_sources_average.iloc[1],
-        domain={'x': [0, 1], 'y': [0, 1]},
-        gauge={'axis': {'range': [-1, 1], 'tickfont': {"family": "Arial", "size": 24}},
-               'bar': {'color': daily_mail_line_color,
-                       'line': {"color": "white",
-                                "width": 3}},
-               'bgcolor': "white"},
-        title={'text': "Daily Mail Average Sentiment", "font": {"family": "Arial", "size": 32}}))
-    daily_mail_fig.update_layout(font={"family": "Arial"})
-    daily_mail_fig.write_image("/tmp/daily_mail_plot.svg")
+    create_gauge_figure(
+        daily_mail_sentiment_score, "Daily Mail", "/tmp/daily_mail_plot.svg", daily_mail_line_color)
 
     template = f'''
 <html>
@@ -222,7 +224,7 @@ def upload_to_s3() -> None:   # pragma: no cover
                        aws_secret_access_key=environ.get("SECRET_KEY"))
     print("Connection established.")
     file_split = PDF_FILE_NAME.split(".")
-    date_time = datetime.now().strftime("%d\%m\%Y, %H:%M:%S")
+    date_time = datetime.now().strftime("%d_%m_%Y, %H:%M:%S")
     file_split[0] += f"({date_time})"
     file_name_with_date_and_time = ".".join(file_split)
     print("Uploading .pdf file.")

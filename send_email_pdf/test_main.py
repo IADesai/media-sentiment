@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from main import convert_html_to_pdf, create_email_message, send_email
+from main import convert_html_to_pdf, create_email_message, send_email, choose_line_color
 
 
 def test_ensure_html_is_string():
@@ -24,3 +24,27 @@ def test_create_email_message(fake_create_email):
 
     with pytest.raises(TypeError):
         create_email_message(send_email())
+
+
+def test_gauge_colour_returns_str():
+    """Checks that a string is returned from choose_line_color()."""
+    score = 0.5
+
+    res = choose_line_color(score)
+
+    assert isinstance(res, str)
+
+
+@patch("main.GREEN", "green")
+@patch("main.RED", "red")
+@pytest.mark.parametrize("score,colour",
+                         [(0, "green"),
+                          (0.2, "green"),
+                          (1, "green"),
+                          (-0.2, "red"),
+                          (-1, "red")])
+def test_check_correct_gauge_colour_returned(score, colour):
+    """Tests the correct colour is returned according to the sentiment score."""
+    res = choose_line_color(score)
+
+    assert res == colour
