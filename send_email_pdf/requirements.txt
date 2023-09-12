@@ -1,10 +1,9 @@
-pytest
-pytest-cov
 pylint
-requests
+pytest
+plotly
 psycopg2-binary
 python-dotenv
 pandas
+xhtml2pdf
 boto3
-pytz
-nltk
+kaleido

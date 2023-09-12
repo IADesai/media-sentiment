@@ -2,13 +2,15 @@
 
 Unit tests are designed to be run with pytest."""
 
+# pylint: skip-file
+
 from unittest.mock import MagicMock, patch
 from re import match
 
 import pytest
 
-from conftest import FakeGet, FakePost
-from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename, get_json_from_request, get_comments_list, process_each_reddit_page
+from reddit_conftest import FakeGet, FakePost, fake_subreddit_json, fake_subreddit_json_missing_entries, fake_json_content_1, fake_json_content_2
+from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename, get_json_from_request, get_comments_list, process_each_reddit_page, remove_unrecognised_formatting
 
 
 @patch("requests.get")
@@ -210,8 +212,8 @@ def test_list_returned_by_process_reddit_page(fake_comments_list, fake_upload, f
         pages_list, reddit_access_token, configuration)
 
     assert isinstance(res, list)
-    assert res == [{"title": "a", "subreddit_url": "r/a", "comments": ["Comment 1", "Comment 2"]}, {"title": "b",
-                                                                                                    "subreddit_url": "r/b", "comments": ["Comment 1", "Comment 2"]}, {"title": "c", "subreddit_url": "r/c", "comments": ["Comment 1", "Comment 2"]}]
+    assert res == [{"title": "a", "subreddit_url": "r/a", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}, {"title": "b",
+                                                                                                                                 "subreddit_url": "r/b", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}, {"title": "c", "subreddit_url": "r/c", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}]
 
 
 @patch("extract.create_json_filename")
@@ -237,3 +239,30 @@ def test_no_list_returned_if_exception_by_process_reddit_page(fake_comments_list
 
     assert isinstance(res, list)
     assert res == []
+
+
+@pytest.mark.parametrize("comment,cleaned_comment",
+                         [("\n This contains single new lines \n .", " This contains single new lines  ."),
+                          ("\\n This contains double new lines \\n .",
+                           " This contains double new lines  ."),
+                          ("&gt;comment&gt;", "comment"),
+                          ("\\n&gt;", ""),
+                          ("wasn\\u2019t", "wasn't"),
+                          ("\\u2018,\\u2019", "','"),
+                          ("&amp;", "&"),
+                          ("h&amp;s", "h&s"),
+                          ("#x200B;", ""),
+                          ("this#x200B; is#x200B; a#x200B; comment",
+                           "this is a comment"),
+                          ("They start just under \\u00a38k, most people can afford that. \\n\\n[Citroen Ami \\u2013 from \\u00a37,695](https://parkers-images.bauersecure.com/pagefiles/308460/citroen_ami_001.jpg)",
+                           "They start just under £38k, most people can afford that. Citroen Ami  from £37,695"),
+                          ("[Text](link)", "Text"),
+                          ("\\u201cThis is a quote\\u201d", "\"This is a quote\""),
+                          ("\\u201c\\u201c\\u201d\\u201d", "\"\"\"\""),
+                          ("\\u2026", ""),
+                          ("\\u2026text\\u2026", "text")])
+def test_formatting_removed_from_comments(comment, cleaned_comment):
+    """Tests formatting is removed from comments."""
+    res = remove_unrecognised_formatting(comment)
+
+    assert res == cleaned_comment

@@ -7,7 +7,11 @@ __pycache__
 .coverage
 *.ipynb
 *.csv
+*.xml
+*.html
 *.json
+*.pdf
+*.svg
 .DS_Store
 *.tfvars
 *.tfstate
