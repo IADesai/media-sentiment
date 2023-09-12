@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from main import convert_html_to_pdf, create_email_message, send_email, choose_line_color
+from main import convert_html_to_pdf, create_email_message, send_email, choose_line_color, get_titles
 
 
 def test_ensure_html_is_string():
@@ -48,3 +48,24 @@ def test_check_correct_gauge_colour_returned(score, colour):
     res = choose_line_color(score)
 
     assert res == colour
+
+
+def test_get_titles_returns_string():
+    """Checks get_titles() returns a string."""
+    titles = ["First", "Second", "Third"]
+
+    res = get_titles(titles)
+
+    assert isinstance(res, str)
+
+
+def test_correct_html_string_returned_for_get_titles():
+    """Checks the correct string is returned for a set of titles."""
+    titles = ["First Title", "Second title."]
+
+    res = get_titles(titles)
+
+    assert res == "<ul>" + \
+        "<li>First Title</li>" + \
+        "<li>Second title.</li>" + \
+        "</ul>"
