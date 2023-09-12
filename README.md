@@ -21,7 +21,7 @@ For more detailed setup, check the individual README files within each folder
 `public_sentiment_pipeline` - Extracts relevant information from Reddit pages, transforms it and loads it onto the database.  
 `terraform` - Contains the code to setup/remove AWS resources effectively using Terraform.  
 `setup.sql` - SQL file which sets up the database used within the pipelines.  
-`.github/workflows` - Contains the workflows which run Pytest and Pylint for every pull request opened.
+`.github/workflows` - Contains the workflows which run `pytest` and `pylint` for every pull request opened with `main` as the target branch.
 
 ## Architecture Diagram
 
