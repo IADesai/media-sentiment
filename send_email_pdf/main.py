@@ -110,24 +110,26 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
         mode="gauge+number+delta",
         value=stories_sources_average.iloc[0],
         domain={'x': [0, 1], 'y': [0, 1]},
-        gauge={'axis': {'range': [-1, 1]},
+        gauge={'axis': {'range': [-1, 1], 'tickfont': {"family": "Arial", "size": 24}},
                'bar': {'color': bbc_line_color,
                        'line': {"color": "white",
                                 "width": 3}},
                'bgcolor': "white"},
-        title={'text': "BBC Average Sentiment"}))
+        title={'text': "BBC Average Sentiment", "font": {"family": "Arial", "size": 32}}))
+    bbc_fig.update_layout(font={"family": "Arial"})
     bbc_fig.write_image("/tmp/bbc_plot.svg")
 
     daily_mail_fig = go.Figure(go.Indicator(
         mode="gauge+number+delta",
         value=stories_sources_average.iloc[1],
         domain={'x': [0, 1], 'y': [0, 1]},
-        gauge={'axis': {'range': [-1, 1]},
+        gauge={'axis': {'range': [-1, 1], 'tickfont': {"family": "Arial", "size": 24}},
                'bar': {'color': daily_mail_line_color,
                        'line': {"color": "white",
                                 "width": 3}},
                'bgcolor': "white"},
-        title={'text': "Daily Mail Average Sentiment"}))
+        title={'text': "Daily Mail Average Sentiment", "font": {"family": "Arial", "size": 32}}))
+    daily_mail_fig.update_layout(font={"family": "Arial"})
     daily_mail_fig.write_image("/tmp/daily_mail_plot.svg")
 
     template = f'''
@@ -197,20 +199,17 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
     return template
 
 
-def convert_html_to_pdf(html_template: str) -> None:   # pragma: no cover
+def convert_html_to_pdf(html_template: str) -> bool:   # pragma: no cover
     """Converts the HTML template provided into a pdf report file"""
     # open output file for writing (truncated binary)
     if not isinstance(html_template, str):
         raise ValueError("The HTML template should be provided as a string")
-    result_file = open(PDF_FILE_PATH, "w+b")
 
-    # convert HTML to PDF
-    pisa_status = pisa.CreatePDF(
-        html_template,                # the HTML to convert
-        dest=result_file)           # file handle to receive result
+    with open(PDF_FILE_PATH, "w+b") as pdf:
+        pisa_status = pisa.CreatePDF(html_template, dest=pdf)
 
-    # close output file
-    result_file.close()
+    with open(PDF_FILE_NAME, "w+b") as pdf:
+        pisa_status = pisa.CreatePDF(html_template, dest=pdf)
 
     # return True on success and False on errors
     return pisa_status.err
@@ -291,3 +290,6 @@ def handler(event, context):
     return {
         "status": "success"
     }
+
+
+handler(0, 1)
