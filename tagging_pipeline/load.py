@@ -9,12 +9,12 @@ from psycopg2 import extras
 import spacy
 
 CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-CSV_FILE = f'{CURRENT_TIMESTAMP}.csv'
+CSV_FILE = f'.csv'
 
 
 def create_keywords_df(table: str) -> pd.DataFrame:
     """Returns most recent csv file in topics folder"""
-    topics_df = pd.read_csv(f"{table}-{CSV_FILE}")
+    topics_df = pd.read_csv(f"{table}{CSV_FILE}")
     return topics_df
 
 

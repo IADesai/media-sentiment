@@ -14,7 +14,7 @@ You must return only one word for each topic. Make sure topics are broad to allo
 The output for each story MUST be in a Python dictionary format where the key corresponds to the INT provided with the story and its paired value being a list of the topics (do not return the title under any circumstances). Here's an example output for two stories: "[{3: ['Weather', 'History', 'Technology']}, {4: ['Health', 'Science', 'Celebrity']}]", output a list of dictionaries for these stories: """
 MAX_LIST_SIZE = 50
 CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-JSON_FILE = f'{CURRENT_TIMESTAMP}.json'
+JSON_FILE = f'response.json'
 
 
 def get_media_stories(conn) -> list | None:

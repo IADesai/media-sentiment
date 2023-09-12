@@ -7,7 +7,7 @@ import json
 import pandas as pd
 
 CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-JSON_FILE = f'{CURRENT_TIMESTAMP}.json'
+JSON_FILE = f'response.json'
 
 
 def read_response_json() -> list[dict]:
@@ -46,7 +46,7 @@ def create_topic_csv(valid_stories: list[dict], table: str, id: str) -> None:
                 new_row = {id: story_id,
                            'topic_one': story_topics[0], 'topic_two': story_topics[1], 'topic_three': story_topics[2]}
                 response_df.loc[len(response_df)] = new_row
-    response_df.to_csv(f'{table}-{CURRENT_TIMESTAMP}.csv', index=False)
+    response_df.to_csv(f'{table}.csv', index=False)
 
 
 def create_reddit_topic_csv(valid_stories: list[dict]) -> None:
@@ -61,4 +61,4 @@ def create_reddit_topic_csv(valid_stories: list[dict]) -> None:
                 new_row = {'re_article_id': story_id,
                            'topic_one': story_topics[0], 'topic_two': story_topics[1], 'topic_three': story_topics[2]}
                 response_df.loc[len(response_df)] = new_row
-    response_df.to_csv(f'reddit-{CURRENT_TIMESTAMP}.csv', index=False)
+    response_df.to_csv(f'reddit.csv', index=False)
