@@ -16,3 +16,17 @@ The following environment variables must be supplied in a `.env` file.
 - `BUCKET_NAME`
 - `EMAIL_SENDER`
 - `EMAIL_RECIPIENT`
+
+## Docker image
+
+Build a Docker image.
+
+```sh
+docker build -t media-sentiment-email-ecr . --platform "linux/amd64"
+```
+
+Run the Docker image.
+
+```sh
+docker run --env-file .env -p 9000:8080 media-sentiment-email-ecr
+```
