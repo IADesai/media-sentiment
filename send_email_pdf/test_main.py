@@ -3,10 +3,11 @@
 Unit tests are designed to be run with pytest."""
 
 from unittest.mock import patch
+import re
 
 import pytest
 
-from main import convert_html_to_pdf, create_email_message, send_email, choose_line_color, get_titles
+from main import convert_html_to_pdf, create_email_message, send_email, choose_line_color, get_titles, create_filename_for_s3_pdf
 
 
 def test_ensure_html_is_string():
@@ -69,3 +70,12 @@ def test_correct_html_string_returned_for_get_titles():
         "<li>First Title</li>" + \
         "<li>Second title.</li>" + \
         "</ul>"
+
+
+@patch("main.PDF_FILE_NAME", "unittest.pdf")
+def test_s3_filename_contains_correctly_formatted_datetime():
+    """Tests the date and time is formatted correctly in the generated pdf filename."""
+    res = create_filename_for_s3_pdf()
+
+    assert re.match(r"\d{4}_\d{2}_\d{2}-\d{2}_\d{2}_\d{2}_unittest\.pdf", res)
+    assert res.endswith("_unittest.pdf")
