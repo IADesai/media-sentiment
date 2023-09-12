@@ -187,12 +187,12 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
 </div>
 
 <div class="widget">
-    <h1>Highest reddit sentiment stories</h1>
+    <h1>Highest Reddit sentiment stories</h1>
     {get_titles(top_5_reddit_titles)}
 </div>
 
 <div class="widget">
-    <h1>Lowest reddit sentiment stories</h1>
+    <h1>Lowest Reddit sentiment stories</h1>
     {get_titles(lowest_5_reddit_titles)}
 </div>
 
