@@ -70,7 +70,11 @@ resource "aws_lambda_function" "media-sentiment-rss-lambda" {
   image_uri     = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-rss-ecr:latest"
   architectures = ["x86_64"]
   package_type  = "Image"
-  timeout = 120
+  memory_size = 256
+  ephemeral_storage {
+    size = 512
+  }
+  timeout = 600
   environment {
     variables = {
       INITIAL_DATABASE  = var.initial_database
@@ -182,7 +186,6 @@ resource "aws_db_instance" "media-sentiment-rds" {
 
 # ECS IAM Role
 
-
 resource "aws_iam_role" "ecs-task-execution-role" {
   name = "ecs-task-execution-role"
 
@@ -282,7 +285,32 @@ resource "aws_ecs_task_definition" "media-sentiment-public-sentiment-ecs" {
         {
           "name" : "DATABASE_PASSWORD",
           "value" : var.database_password
-      }]
+        },
+        {
+          "name" : "REDDIT_TOPIC",
+          "value" : var.reddit_topic
+        },
+        {
+          "name" : "REDDIT_JSON_BUCKET_NAME",
+          "value" : var.reddit_json_bucket_name
+        },
+        {
+          "name" : "REDDIT_CLIENT_SECRET",
+          "value" : var.reddit_client_secret
+        },
+        {
+          "name" : "REDDIT_SECRET_KEY",
+          "value" : var.reddit_secret_key
+        },
+        {
+          "name" : "REDDIT_USERNAME",
+          "value" : var.reddit_username
+        },
+        {
+          "name" : "REDDIT_PASSWORD",
+          "value" : var.reddit_password
+        }
+      ]
     }
   ])
 }
@@ -328,15 +356,15 @@ resource "aws_ecs_task_definition" "media-sentiment-article-sentiment-ecs" {
           "value" : var.database_username
         },
         {
-          "name" : "DATABASE_IP",
+          "name" : "DATABASE_ENDPOINT",
           "value" : aws_db_instance.media-sentiment-rds.address
         },
         {
-          "name" : "ACCESS_KEY",
+          "name" : "ACCESS_KEY_ID",
           "value" : var.access_key
         },
         {
-          "name" : "SECRET_KEY",
+          "name" : "SECRET_ACCESS_KEY",
           "value" : var.secret_key
         },
         {
@@ -346,7 +374,12 @@ resource "aws_ecs_task_definition" "media-sentiment-article-sentiment-ecs" {
         {
           "name" : "DATABASE_PASSWORD",
           "value" : var.database_password
-      }]
+        },
+        {
+          "name" : "OPENAI_API_KEY",
+          "value" : var.openai_api_key
+        }
+      ]
     }
   ])
 }
@@ -388,7 +421,11 @@ resource "aws_lambda_function" "media-sentiment-email-lambda" {
   image_uri     = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/media-sentiment-email-ecr:latest"
   architectures = ["x86_64"]
   package_type  = "Image"
-  timeout = 120
+  memory_size = 256
+  ephemeral_storage {
+    size = 512
+  }
+  timeout = 300
   environment {
     variables = {
       INITIAL_DATABASE  = var.initial_database
@@ -397,9 +434,11 @@ resource "aws_lambda_function" "media-sentiment-email-lambda" {
       DATABASE_PORT     = var.database_port
       DATABASE_USERNAME = var.database_username
       DATABASE_IP       = aws_db_instance.media-sentiment-rds.address
-      ACCESS_KEY_ID     = var.access_key
-      SECRET_ACCESS_KEY = var.secret_key
-      BUCKET_NAME       = var.bucket_name
+      ACCESS_KEY     = var.access_key
+      SECRET_KEY = var.secret_key
+      BUCKET_NAME       = var.email_bucket_name
+      EMAIL_SENDER = var.email_sender
+      EMAIL_RECIPIENT = var.email_recipient
     }
   }
 }
@@ -410,13 +449,39 @@ resource "aws_s3_bucket" "media-sentiment-reddit-json-short-term" {
   bucket = "media-sentiment-reddit-json-short-term"
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "media-sentiment-reddit-json-long-term" {
+  rule {
+    id      = "media-sentiment-reddit-json-long-term-rule"
+    status  = "Enabled"
+
+    transition {
+      days          = 1
+      storage_class = "GLACIER_IR"
+    }
+  }
+
+  bucket = aws_s3_bucket.media-sentiment-reddit-json-short-term.id
+}
+
 # S3 report pdf bucket
 
 resource "aws_s3_bucket" "media-sentiment-pdf-reports-short-term" {
   bucket = "media-sentiment-pdf-reports-short-term"
 }
 
-# S3 Glacier
+resource "aws_s3_bucket_lifecycle_configuration" "media-sentiment-pdf-reports-long-term" {
+  rule {
+    id      = "media-sentiment-pdf-reports-long-term-rule"
+    status  = "Enabled"
+
+    transition {
+      days          = 1
+      storage_class = "GLACIER_IR"
+    }
+  }
+
+  bucket = aws_s3_bucket.media-sentiment-pdf-reports-short-term.id
+}
 
 # State Machine
 
@@ -528,26 +593,9 @@ resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
   definition = <<EOF
 {
   "Comment": "State machine that runs the article sentiment ECS, public sentiment ECS, and email lambda",
-  "StartAt": "ECS RunTask",
+  "StartAt": "reddit-ecs",
   "States": {
-    "ECS RunTask": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::ecs:runTask.sync",
-      "Parameters": {
-        "LaunchType": "FARGATE",
-        "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
-        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-article-sentiment-ecs",
-        "NetworkConfiguration": {
-      "AwsvpcConfiguration": {
-         "AssignPublicIp": "ENABLED",
-         "SecurityGroups": ["sg-0ac19c4c6eb7d1ca3"],
-         "Subnets": ["subnet-03b1a3e1075174995", "subnet-0cec5bdb9586ed3c4","subnet-0667517a2a13e2a6b"]
-      }
-      }
-      },
-      "Next": "ECS RunTask (1)"
-    },
-    "ECS RunTask (1)": {
+    "reddit-ecs": {
       "Type": "Task",
       "Resource": "arn:aws:states:::ecs:runTask.sync",
       "Parameters": {
@@ -562,9 +610,26 @@ resource "aws_sfn_state_machine" "media-sentiment-state-machine" {
       }
       }
       },
-      "Next": "Lambda Invoke"
+      "Next": "tagging-ecs"
     },
-    "Lambda Invoke": {
+    "tagging-ecs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "arn:aws:ecs:eu-west-2:129033205317:cluster/media-sentiment-cluster",
+        "TaskDefinition": "arn:aws:ecs:eu-west-2:129033205317:task-definition/media-sentiment-article-sentiment-ecs",
+        "NetworkConfiguration": {
+      "AwsvpcConfiguration": {
+         "AssignPublicIp": "ENABLED",
+         "SecurityGroups": ["sg-0ac19c4c6eb7d1ca3"],
+         "Subnets": ["subnet-03b1a3e1075174995", "subnet-0cec5bdb9586ed3c4","subnet-0667517a2a13e2a6b"]
+      }
+      }
+      },
+      "Next": "Email Lambda Invoke"
+    },
+    "Email Lambda Invoke": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "OutputPath": "$.Payload",

@@ -23,6 +23,7 @@ jobs:
         pip install -r ./media_sentiment_pipeline/requirements.txt
         pip install -r ./public_sentiment_pipeline/requirements.txt
         pip install -r ./rss_pipeline/requirements.txt
+        pip install -r ./send_email_pdf/requirements.txt
     - name: Analysing push files with pylint
       run: |
         pylint --fail-under=8 $(git ls-files '*.py')

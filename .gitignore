@@ -10,6 +10,8 @@ __pycache__
 *.xml
 *.html
 *.json
+*.pdf
+*.svg
 .DS_Store
 *.tfvars
 *.tfstate
