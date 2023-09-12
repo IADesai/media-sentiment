@@ -15,7 +15,7 @@ This project extracts UK news articles from different RSS feeds and finds relate
 
 ## About the Repo
 
-For more detailed setup, check the individual README files within each folder
+For more detailed setup, check the individual README files within each folder.
 
 `rss_pipeline` - Extracts relevant information from the news feeds, transforms it and loads it onto the database.  
 `public_sentiment_pipeline` - Extracts relevant information from Reddit pages, transforms it and loads it onto the database.  
