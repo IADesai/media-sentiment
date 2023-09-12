@@ -10,6 +10,7 @@ import pandas as pd
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
 
 
 BBC_UK_NEWS_XML_FILE_NAME = "bbc_uk_news.xml"
@@ -208,9 +209,16 @@ if __name__ == "__main__":
 
     vader = SentimentIntensityAnalyzer(lexicon_file="vader_lexicon.txt")
 
-    bbc_articles_df = transform_bbc_xml_file(BBC_UK_NEWS_XML_FILE_NAME, vader)
-    daily_mail_articles_df = transform_daily_mail_xml_file(
-        DAILY_MAIL_UK_NEWS_XML_FILE_NAME, vader)
+    # Multithreading to make the tasks run faster
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_bbc = executor.submit(
+            transform_bbc_xml_file, BBC_UK_NEWS_XML_FILE_NAME, vader)
+        future_daily_mail = executor.submit(
+            transform_daily_mail_xml_file, DAILY_MAIL_UK_NEWS_XML_FILE_NAME, vader)
+
+        # Wait for both tasks to complete
+        bbc_articles_df = future_bbc.result()
+        daily_mail_articles_df = future_daily_mail.result()
 
     daily_mail_articles_df.to_csv(DAILY_MAIL_UK_NEWS_CSV_FILENAME)
     bbc_articles_df.to_csv(BBC_UK_NEWS_CSV_FILENAME)

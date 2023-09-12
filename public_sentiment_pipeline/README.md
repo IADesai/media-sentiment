@@ -2,20 +2,12 @@
 
 ## Configure development environment
 
-Create a Python virtual environment and install necessary packages.
+Create a Python [virtual environment](https://docs.python.org/3/library/venv.html) and install necessary packages:
 
 ```sh
 python3 -m venv venv
 source ./venv/bin/activate
 pip3 install -r requirements.txt
-```
-
-## Run the code
-
-Run the pipeline script.
-
-```sh
-python3 load.py
 ```
 
 ## Required environment variables
@@ -34,6 +26,14 @@ The following environment variables must be supplied in a .env file in order to 
 - `DATABASE_USERNAME`
 - `DATABASE_IP`
 - `DATABASE_PASSWORD`
+
+## Running the pipeline
+
+Execute the public sentiment pipeline by running:
+
+```sh
+python3 load.py
+```
 
 ## Archiving
 
