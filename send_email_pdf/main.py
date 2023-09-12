@@ -7,6 +7,7 @@ from os import environ
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from datetime import datetime
+import re
 
 from dotenv import load_dotenv
 from psycopg2.extensions import connection
@@ -24,7 +25,7 @@ RED = "#e15759"
 
 
 def join_all_stories_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
-    "Function that joins the stories and story sources SQL tables"
+    "Function that joins the stories and story sources SQL tables."
     query = """SELECT story_id, title, description,url, pub_date, media_sentiment,
     source_name FROM stories JOIN sources ON stories.source_id = sources.source_id"""
     with conn.cursor() as cur:
@@ -37,7 +38,7 @@ def join_all_stories_info(conn: connection) -> pd.DataFrame:   # pragma: no cove
 
 
 def join_all_reddit_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
-    "Function that joins all reddit sources SQL tables"
+    "Function that joins all reddit sources SQL tables."
     query = """SELECT * FROM reddit_article"""
     with conn.cursor() as cur:
         cur.execute(query)
@@ -68,7 +69,8 @@ def get_db_connection():   # pragma: no cover
 
 def get_titles(titles) -> str:
     """Function that takes out all the title names from the top stories
-    and returns them as a html ready string"""
+    and returns them as a HTML ready string.
+    """
     title_str = "<ul>"
     for title in titles:
         title_str += f"<li>{title}</li>"
@@ -100,10 +102,10 @@ def choose_line_color(score: float) -> str:
         return RED
 
 
-def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
+def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:  # pragma: no cover
     """Creates the HTML template for the report, including all visualizations as
-    images within the html wrapper"""
-
+    images within the HTML wrapper.
+    """
     # Sort the stories_data DataFrame by article_sentiment in descending order
     sorted_article_data = stories_data.sort_values(
         by='article_sentiment', ascending=False)
@@ -185,12 +187,12 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
 </div>
 
 <div class="widget">
-    <h1>Highest reddit sentiment stories</h1>
+    <h1>Highest Reddit sentiment stories</h1>
     {get_titles(top_5_reddit_titles)}
 </div>
 
 <div class="widget">
-    <h1>Lowest reddit sentiment stories</h1>
+    <h1>Lowest Reddit sentiment stories</h1>
     {get_titles(lowest_5_reddit_titles)}
 </div>
 
@@ -202,7 +204,7 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
 
 
 def convert_html_to_pdf(html_template: str) -> bool:   # pragma: no cover
-    """Converts the HTML template provided into a pdf report file"""
+    """Converts the HTML template provided into a pdf report file."""
     # open output file for writing (truncated binary)
     if not isinstance(html_template, str):
         raise ValueError("The HTML template should be provided as a string")
@@ -214,16 +216,20 @@ def convert_html_to_pdf(html_template: str) -> bool:   # pragma: no cover
     return pisa_status.err
 
 
+def create_filename_for_s3_pdf() -> str:
+    """Returns a filename for the uploaded pdf using the current date and time."""
+    filename = re.sub(r"(.+)\.pdf", "\\1", PDF_FILE_NAME)
+    date_time = datetime.now().strftime("%Y_%m_%d-%H_%M_%S_")
+    return date_time + filename + ".pdf"
+
+
 def upload_to_s3() -> None:   # pragma: no cover
-    """Function that uploads the created pdf to an s3 bucket"""
+    """Function that uploads the created pdf to an S3 bucket."""
     print("Establishing connection to AWS.")
     s3_client = client("s3", aws_access_key_id=environ.get("ACCESS_KEY"),
                        aws_secret_access_key=environ.get("SECRET_KEY"))
     print("Connection established.")
-    file_split = PDF_FILE_NAME.split(".")
-    date_time = datetime.now().strftime("%d_%m_%Y, %H:%M:%S")
-    file_split[0] += f"({date_time})"
-    file_name_with_date_and_time = ".".join(file_split)
+    file_name_with_date_and_time = create_filename_for_s3_pdf()
     print("Uploading .pdf file.")
     s3_client.upload_file(
         PDF_FILE_PATH, environ.get("BUCKET_NAME"), file_name_with_date_and_time)
@@ -264,8 +270,8 @@ def send_email(email_message: MIMEMultipart) -> None:  # pragma: no cover
     print("Email sent.")
 
 
-def handler(event, context):
-    """Lambda handler function"""
+def handler(event, context):  # pragma: no cover
+    """Lambda handler function."""
 
     load_dotenv()
     db_conn = get_db_connection()
