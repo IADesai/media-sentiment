@@ -173,6 +173,7 @@ def test_zip_file_name_formatted_correctly():
     assert match(r"\d{4}_\d{2}_\d{2}-\d{2}_\d{2}-json-archive\.zip", res)
 
 
+@patch("extract.MIN_PROCESSED_COMMENTS", 2)
 @patch("extract.create_zip_folder")
 @patch("extract.create_json_filename")
 @patch("extract.get_json_from_request")
@@ -200,6 +201,7 @@ def test_correct_calls_made_by_process_reddit_page(fake_comments_list, fake_uplo
     assert fake_upload.call_count == 1
 
 
+@patch("extract.MIN_PROCESSED_COMMENTS", 2)
 @patch("extract.create_zip_folder")
 @patch("extract.create_json_filename")
 @patch("extract.get_json_from_request")
@@ -226,6 +228,33 @@ def test_list_returned_by_process_reddit_page(fake_comments_list, fake_upload, f
                                                                                                                                  "subreddit_url": "r/b", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}, {"title": "c", "subreddit_url": "r/c", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}]
 
 
+@patch("extract.MIN_PROCESSED_COMMENTS", 3)
+@patch("extract.create_zip_folder")
+@patch("extract.create_json_filename")
+@patch("extract.get_json_from_request")
+@patch("extract.save_json_to_file")
+@patch("extract.upload_zip_s3")
+@patch("extract.get_comments_list")
+def test_pages_with_fewer_comments_not_returned(fake_comments_list, fake_upload, fake_save, fake_get_json, fake_create_filename, fake_create_zip):
+    """Tests pages with fewer than the minimum comment count are not returned by process_each_reddit_page()."""
+    pages_list = [{"title": "a", "subreddit_url": "r/a"}, {"title": "b",
+                                                           "subreddit_url": "r/b"}, {"title": "c", "subreddit_url": "r/c"}]
+    reddit_access_token = "12345"
+    configuration = {"REDDIT_CLIENT_SECRET": "54321",
+                     "REDDIT_SECRET_KEY": "12345",
+                     "REDDIT_USERNAME": "12345_54321",
+                     "REDDIT_PASSWORD": "54321_12345"}
+
+    fake_comments_list.return_value = ["Comment 1", "Comment 2"]
+
+    res = process_each_reddit_page(
+        pages_list, reddit_access_token, configuration)
+
+    assert isinstance(res, list)
+    assert res == []
+
+
+@patch("extract.MIN_PROCESSED_COMMENTS", 2)
 @patch("extract.create_zip_folder")
 @patch("extract.create_json_filename")
 @patch("extract.get_json_from_request")
