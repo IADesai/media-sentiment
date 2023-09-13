@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import re
 import os
+from zipfile import ZipFile
 
 import requests
 from dotenv import dotenv_values
@@ -106,12 +107,12 @@ def save_json_to_file(json_contents: dict, json_filename: str) -> None:  # pragm
                   indent=4, separators=(",", ": "))
 
 
-def upload_json_s3(config: dict, json_filename: str) -> None:  # pragma: no cover
-    """Uploads a JSON file to an S3 bucket."""
+def upload_zip_s3(config: dict, zip_filename: str) -> None:  # pragma: no cover
+    """Uploads a zip file to an S3 bucket."""
     s3_client = client("s3", aws_access_key_id=config["ACCESS_KEY"],
                        aws_secret_access_key=config["SECRET_KEY"])
     s3_client.upload_file(
-        json_filename, config["REDDIT_JSON_BUCKET_NAME"], json_filename)
+        zip_filename, config["REDDIT_JSON_BUCKET_NAME"], zip_filename)
 
 
 def get_json_from_request(subreddit_url: str, reddit_access_token: str) -> dict:
@@ -180,6 +181,20 @@ def get_comments_list(json_filename: str) -> list[str]:
     return comment_list
 
 
+def create_zip_filename() -> str:
+    """Returns a ZIP filename using the current date and time."""
+    current_timestamp = datetime.strftime(datetime.now(
+        tz=timezone("Europe/London")), "%Y_%m_%d-%H_%M")
+    return f"{current_timestamp}-json-archive.zip"
+
+
+def create_zip_folder(filename_list: list[str], zip_filename: str) -> None:  # pragma: no cover
+    """Creates a compressed zip folder containing JSON files."""
+    with ZipFile(zip_filename, "w") as f_obj:
+        for file in filename_list:
+            f_obj.write(file)
+
+
 def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, config: dict) -> list[dict]:
     """Iterates through the list of Reddit pages.
 
@@ -187,13 +202,14 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
     """
     print("Commencing fetch of subreddit pages.")
     response_list = []
+    filename_list = []
     for page in pages_list:
         try:
             json_filename = create_json_filename(page[REDDIT_TITLE_KEY])
             page_json = get_json_from_request(
                 SUBREDDIT_URL+page[REDDIT_SUBREDDIT_URL], reddit_access_token)
             save_json_to_file(page_json, json_filename)
-            upload_json_s3(config, json_filename)
+            filename_list.append(json_filename)
             page[REDDIT_COMMENTS] = get_comments_list(json_filename)
             page[REDDIT_INCLUDED_COMMENTS] = len(page[REDDIT_COMMENTS])
             if page[REDDIT_INCLUDED_COMMENTS] >= MIN_PROCESSED_COMMENTS:
@@ -201,6 +217,11 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
         except (ConnectionError, AttributeError) as err:
             print(err)
     print("Fetch of each subreddit page complete.")
+    print("Uploading zip file to S3.")
+    zip_filename = create_zip_filename()
+    create_zip_folder(filename_list, zip_filename)
+    upload_zip_s3(config, zip_filename)
+    print("Zip file uploaded to S3.")
     return response_list
 
 
