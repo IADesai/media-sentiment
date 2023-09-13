@@ -166,12 +166,13 @@ def test_comment_lines_removed(fake_read_json, fake_json_content_2):
     assert res == ["This is the third comment.", "This is the fourth comment."]
 
 
+@patch("extract.create_zip_folder")
 @patch("extract.create_json_filename")
 @patch("extract.get_json_from_request")
 @patch("extract.save_json_to_file")
-@patch("extract.upload_json_s3")
+@patch("extract.upload_zip_s3")
 @patch("extract.get_comments_list")
-def test_correct_calls_made_by_process_reddit_page(fake_comments_list, fake_upload, fake_save, fake_get_json, fake_create_filename):
+def test_correct_calls_made_by_process_reddit_page(fake_comments_list, fake_upload, fake_save, fake_get_json, fake_create_filename, fake_create_zip):
     """Tests the correct function calls are made by process_each_reddit_page()."""
     pages_list = [{"title": "a", "subreddit_url": "r/a"}, {"title": "b",
                                                            "subreddit_url": "r/b"}, {"title": "c", "subreddit_url": "r/c"}]
@@ -185,18 +186,20 @@ def test_correct_calls_made_by_process_reddit_page(fake_comments_list, fake_uplo
         pages_list, reddit_access_token, configuration)
 
     assert fake_comments_list.call_count == 3
-    assert fake_upload.call_count == 3
     assert fake_save.call_count == 3
     assert fake_get_json.call_count == 3
     assert fake_create_filename.call_count == 3
+    assert fake_create_zip.call_count == 1
+    assert fake_upload.call_count == 1
 
 
+@patch("extract.create_zip_folder")
 @patch("extract.create_json_filename")
 @patch("extract.get_json_from_request")
 @patch("extract.save_json_to_file")
-@patch("extract.upload_json_s3")
+@patch("extract.upload_zip_s3")
 @patch("extract.get_comments_list")
-def test_list_returned_by_process_reddit_page(fake_comments_list, fake_upload, fake_save, fake_get_json, fake_create_filename):
+def test_list_returned_by_process_reddit_page(fake_comments_list, fake_upload, fake_save, fake_get_json, fake_create_filename, fake_create_zip):
     """Tests a list is returned by process_each_reddit_page()."""
     pages_list = [{"title": "a", "subreddit_url": "r/a"}, {"title": "b",
                                                            "subreddit_url": "r/b"}, {"title": "c", "subreddit_url": "r/c"}]
@@ -216,12 +219,13 @@ def test_list_returned_by_process_reddit_page(fake_comments_list, fake_upload, f
                                                                                                                                  "subreddit_url": "r/b", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}, {"title": "c", "subreddit_url": "r/c", "comments": ["Comment 1", "Comment 2"], "included_comment_count": 2}]
 
 
+@patch("extract.create_zip_folder")
 @patch("extract.create_json_filename")
 @patch("extract.get_json_from_request")
 @patch("extract.save_json_to_file")
-@patch("extract.upload_json_s3")
+@patch("extract.upload_zip_s3")
 @patch("extract.get_comments_list")
-def test_no_list_returned_if_exception_by_process_reddit_page(fake_comments_list, fake_upload, fake_save, fake_get_json, fake_create_filename):
+def test_no_list_returned_if_exception_by_process_reddit_page(fake_comments_list, fake_upload, fake_save, fake_get_json, fake_create_filename, fake_create_zip):
     """Tests no list is returned if exceptions are raised during process_each_reddit_page()."""
     pages_list = [{"title": "a", "subreddit_url": "r/a"}, {"title": "b",
                                                            "subreddit_url": "r/b"}, {"title": "c", "subreddit_url": "r/c"}]
