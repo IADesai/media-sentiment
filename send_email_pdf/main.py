@@ -165,8 +165,7 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
 </head>
 <body>
 <div class="title-container">
-    <img style="width: 50px; height: 50px; margin-bottom: 10px;" src="SL_Favicon-45.png" alt="Logo" class=title-container/>
-    <span style="text-align:center;font-size:250%;">Media Sentiment Daily Quarter Report</span>
+    <img src="media-sentiment-report-header.png" alt="Media Sentiment Report" class=title-container/>
 </div>
 
 <div class="widget">
