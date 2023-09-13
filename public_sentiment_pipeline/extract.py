@@ -196,7 +196,8 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
             upload_json_s3(config, json_filename)
             page[REDDIT_COMMENTS] = get_comments_list(json_filename)
             page[REDDIT_INCLUDED_COMMENTS] = len(page[REDDIT_COMMENTS])
-            response_list.append(page)
+            if page[REDDIT_INCLUDED_COMMENTS] >= MIN_PROCESSED_COMMENTS:
+                response_list.append(page)
         except (ConnectionError, AttributeError) as err:
             print(err)
     print("Fetch of each subreddit page complete.")
