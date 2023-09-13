@@ -13,6 +13,8 @@ from pytz import timezone
 MAX_REDDIT_PAGES = 40
 MAX_REDDIT_COMMENTS = 500
 
+MIN_PROCESSED_COMMENTS = 5
+
 REDDIT_URL = "https://oauth.reddit.com/r/"
 SUBREDDIT_URL = "https://oauth.reddit.com/"
 REDDIT_ACCESS_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
@@ -194,7 +196,8 @@ def process_each_reddit_page(pages_list: list[dict], reddit_access_token: str, c
             upload_json_s3(config, json_filename)
             page[REDDIT_COMMENTS] = get_comments_list(json_filename)
             page[REDDIT_INCLUDED_COMMENTS] = len(page[REDDIT_COMMENTS])
-            response_list.append(page)
+            if page[REDDIT_INCLUDED_COMMENTS] >= MIN_PROCESSED_COMMENTS:
+                response_list.append(page)
         except (ConnectionError, AttributeError) as err:
             print(err)
     print("Fetch of each subreddit page complete.")
