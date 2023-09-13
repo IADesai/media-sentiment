@@ -13,6 +13,8 @@ from pytz import timezone
 MAX_REDDIT_PAGES = 40
 MAX_REDDIT_COMMENTS = 500
 
+MIN_PROCESSED_COMMENTS = 5
+
 REDDIT_URL = "https://oauth.reddit.com/r/"
 SUBREDDIT_URL = "https://oauth.reddit.com/"
 REDDIT_ACCESS_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
