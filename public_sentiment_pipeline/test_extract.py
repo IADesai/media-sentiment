@@ -10,7 +10,7 @@ from re import match
 import pytest
 
 from reddit_conftest import FakeGet, FakePost, fake_subreddit_json, fake_subreddit_json_missing_entries, fake_json_content_1, fake_json_content_2
-from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename, get_json_from_request, get_comments_list, process_each_reddit_page, remove_unrecognised_formatting
+from extract import get_subreddit_json, get_reddit_access_token, create_pages_list, create_json_filename, get_json_from_request, get_comments_list, process_each_reddit_page, remove_unrecognised_formatting, create_zip_filename
 
 
 @patch("requests.get")
@@ -164,6 +164,13 @@ def test_comment_lines_removed(fake_read_json, fake_json_content_2):
 
     assert len(res) == 2
     assert res == ["This is the third comment.", "This is the fourth comment."]
+
+
+def test_zip_file_name_formatted_correctly():
+    """Checks the zip filename is formatted correctly."""
+    res = create_zip_filename()
+
+    assert match(r"\d{4}_\d{2}_\d{2}-\d{2}_\d{2}-json-archive\.zip", res)
 
 
 @patch("extract.create_zip_folder")
