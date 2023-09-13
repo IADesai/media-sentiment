@@ -51,6 +51,37 @@ def join_all_reddit_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
     return reddit_df
 
 
+def join_all_info(conn: connection) -> pd.DataFrame:
+    "Function that joins all SQL tables."
+    query = """SELECT * 
+            FROM stories 
+            JOIN sources ON sources.source_id = stories.source_id
+            JOIN story_keyword_link ON story_keyword_link.story_id = stories.story_id
+            JOIN keywords ON keywords.keyword_id = story_keyword_link.keyword_id
+            JOIN reddit_keyword_link ON reddit_keyword_link.keyword_id = keywords.keyword_id
+            JOIN reddit_article ON reddit_article.re_article_id = reddit_keyword_link.re_article_id;"""
+    with conn.cursor() as cur:
+        cur.execute(query)
+        tuples_list = cur.fetchall()
+    columns_list = ["story_id", "source_id", "title", "description",
+                    "url", "pub_date", "media_sentiment",
+
+                    "source_id", "source_name",
+
+                    "link_id", "keyword_id", "story_id",
+
+                    "keyword_id", "keyword",
+
+                    "re_link_id", "keyword_id", "re_article_id",
+
+                    "re_article_id", "re_domain", "re_title", "re_article_url", "re_url", "re_sentiment_mean",
+                    "re_sentiment_st_dev", "re_sentiment_median", "re_vote_score", "re_upvote_ratio", "re_post_comments",
+                    "re_processed_comments", "re_created_timestamp"
+                    ]
+    complete_df = pd.DataFrame(tuples_list, columns=columns_list)
+    return complete_df
+
+
 def get_db_connection():   # pragma: no cover
     """Establishes a connection with the PostgreSQL database."""
     try:
@@ -102,7 +133,7 @@ def choose_line_color(score: float) -> str:
         return RED
 
 
-def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:  # pragma: no cover
+def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame, all_data: pd.DataFrame) -> str:  # pragma: no cover
     """Creates the HTML template for the report, including all visualizations as
     images within the HTML wrapper.
     """
@@ -165,7 +196,8 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
 </head>
 <body>
 <div class="title-container">
-    <img src="media-sentiment-report-header.png" alt="Media Sentiment Report" class=title-container/>
+    <img style="width: 50px; height: 50px; margin-bottom: 10px;" src="SL_Favicon-45.png" alt="Logo" class=title-container/>
+    <span style="text-align:center;font-size:250%;">Media Sentiment Daily Quarter Report</span>
 </div>
 
 <div class="widget">
@@ -275,13 +307,19 @@ def handler(event, context):  # pragma: no cover
     load_dotenv()
     db_conn = get_db_connection()
 
+    complete_df = join_all_info(conn)
+    complete_df = complete_df.sample(2000)
+    complete_df.to_csv("joined_all.csv")
+    print("joined_all_work")
+
     joined_stories_df = join_all_stories_info(db_conn)
     print("joined_stories_works")
 
     joined_reddit_df = join_all_reddit_info(db_conn)
     print("joined_reddit_works")
 
-    report_template = create_report(joined_stories_df, joined_reddit_df)
+    report_template = create_report(
+        joined_stories_df, joined_reddit_df, complete_df)
     print("report_template_works")
 
     convert_html_to_pdf(report_template)
@@ -294,3 +332,6 @@ def handler(event, context):  # pragma: no cover
     return {
         "status": "success"
     }
+
+
+handler(0, 0)
