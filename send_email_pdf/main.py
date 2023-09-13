@@ -24,33 +24,6 @@ GREEN = "#199988"
 RED = "#e15759"
 
 
-def join_all_stories_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
-    "Function that joins the stories and story sources SQL tables."
-    query = """SELECT story_id, title, description,url, pub_date, media_sentiment,
-    source_name FROM stories JOIN sources ON stories.source_id = sources.source_id"""
-    with conn.cursor() as cur:
-        cur.execute(query)
-        tuples_list = cur.fetchall()
-    stories_df = pd.DataFrame(tuples_list, columns=[
-        "story_id", "title", "description", "url", "pub_date",
-        "article_sentiment", "source_name"])
-    return stories_df
-
-
-def join_all_reddit_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
-    "Function that joins all reddit sources SQL tables."
-    query = """SELECT * FROM reddit_article"""
-    with conn.cursor() as cur:
-        cur.execute(query)
-        tuples_list = cur.fetchall()
-    columns_list = ["article_id", "domain", "title", "article_url",
-                    "url", "re_sentiment_mean", "re_sentiment_st_dev",
-                    "re_sentiment_median", "re_vote_score", "re_upvote_ratio",
-                    "re_post_comments", "re_processed_comments", "re_created_timestamp"]
-    reddit_df = pd.DataFrame(tuples_list, columns=columns_list)
-    return reddit_df
-
-
 def join_all_info(conn: connection) -> pd.DataFrame:
     "Function that joins all SQL tables."
     query = """SELECT * 
@@ -80,6 +53,33 @@ def join_all_info(conn: connection) -> pd.DataFrame:
                     ]
     complete_df = pd.DataFrame(tuples_list, columns=columns_list)
     return complete_df
+
+
+def join_all_stories_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
+    "Function that joins the stories and story sources SQL tables."
+    query = """SELECT story_id, title, description,url, pub_date, media_sentiment,
+    source_name FROM stories JOIN sources ON stories.source_id = sources.source_id"""
+    with conn.cursor() as cur:
+        cur.execute(query)
+        tuples_list = cur.fetchall()
+    stories_df = pd.DataFrame(tuples_list, columns=[
+        "story_id", "title", "description", "url", "pub_date",
+        "article_sentiment", "source_name"])
+    return stories_df
+
+
+def join_all_reddit_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
+    "Function that joins all reddit sources SQL tables."
+    query = """SELECT * FROM reddit_article"""
+    with conn.cursor() as cur:
+        cur.execute(query)
+        tuples_list = cur.fetchall()
+    columns_list = ["article_id", "domain", "title", "article_url",
+                    "url", "re_sentiment_mean", "re_sentiment_st_dev",
+                    "re_sentiment_median", "re_vote_score", "re_upvote_ratio",
+                    "re_post_comments", "re_processed_comments", "re_created_timestamp"]
+    reddit_df = pd.DataFrame(tuples_list, columns=columns_list)
+    return reddit_df
 
 
 def get_db_connection():   # pragma: no cover
@@ -196,8 +196,7 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame, all_dat
 </head>
 <body>
 <div class="title-container">
-    <img style="width: 50px; height: 50px; margin-bottom: 10px;" src="SL_Favicon-45.png" alt="Logo" class=title-container/>
-    <span style="text-align:center;font-size:250%;">Media Sentiment Daily Quarter Report</span>
+    <img src="media-sentiment-report-header.png" alt="Media Sentiment Report" class=title-container/>
 </div>
 
 <div class="widget">
@@ -307,7 +306,7 @@ def handler(event, context):  # pragma: no cover
     load_dotenv()
     db_conn = get_db_connection()
 
-    complete_df = join_all_info(conn)
+    complete_df = join_all_info(db_conn)
     complete_df = complete_df.sample(2000)
     complete_df.to_csv("joined_all.csv")
     print("joined_all_work")
