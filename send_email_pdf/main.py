@@ -112,7 +112,7 @@ def create_gauge_figure(data, source: str, filename: str, line_color: str) -> No
                        'line': {"color": "white",
                                 "width": 3}},
                'bgcolor': "white"},
-        title={'text': f"{source} Sentiment", "font": {"family": "Arial", "size": 32}})])
+        title={'text': f"{source} Sentiment", "font": {"family": "Arial", "size": 40}})])
     gauge_fig.update_layout(font={"family": "Arial"})
     gauge_fig.write_image(filename)
 
@@ -212,7 +212,6 @@ def create_report(recent_data: pd.DataFrame, media_average_data: pd.DataFrame) -
     .widget {{
         background-color: #fff;
         padding: 2px;
-        margin-bottom: 2px;
         border-radius: 2px;
     }}
 
@@ -227,15 +226,15 @@ def create_report(recent_data: pd.DataFrame, media_average_data: pd.DataFrame) -
 
 <table border="0" style="width:100%;text-align:center">
 <tr>
-<td><img style="width: 300px; height: 200px" src = "/tmp/bbc_plot.svg" alt="BBC"/></td>
-<td><img style="width: 300px; height: 200px" src = "/tmp/daily_mail_plot.svg" alt="Daily Mail"/></td>
+<td><img style="width: 260px; height: 160px" src = "/tmp/bbc_plot.svg" alt="BBC"/></td>
+<td><img style="width: 260px; height: 160px" src = "/tmp/daily_mail_plot.svg" alt="Daily Mail"/></td>
 </tr>
 </table>
 
 <h1 style='text-align:center;color:#fff;padding-top:10px;'>Most Popular Topics</h1>
 
 <div class="widget">
-    <img style="width:800px;height: 300px;text-align:center" src = "/tmp/most_popular_plot.svg" alt="Most Popular"/>
+    <img style="width:600px;height: 300px;text-align:center" src = "/tmp/most_popular_plot.svg" alt="Most Popular"/>
 </div>
 
 <h1 style='text-align:center;color:#88C180;padding-top:10px;'>Highest Sentiment Stories</h1>
