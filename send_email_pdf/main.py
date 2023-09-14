@@ -357,6 +357,3 @@ def handler(event, context):  # pragma: no cover
     return {
         "status": "success"
     }
-
-
-handler(0, 0)
