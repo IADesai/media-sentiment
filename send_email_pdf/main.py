@@ -56,7 +56,7 @@ def get_media_averages(conn: connection) -> pd.DataFrame:   # pragma: no cover
 FROM stories
 JOIN sources ON sources.source_id = stories.source_id
 WHERE stories.pub_date BETWEEN NOW() - INTERVAL '24 HOURS' AND NOW()
-GROUP BY source_name;"""
+GROUP BY source_name ORDER BY source_name;"""
     with conn.cursor() as cur:
         cur.execute(query)
         tuples_list = cur.fetchall()
@@ -87,7 +87,7 @@ def get_titles(titles) -> str:
     """
     title_str = "<ul>"
     for title in titles:
-        title_str += f"<li>{title}</li>"
+        title_str += f"<li style='font-size:12px';><b>{title}</b></li>"
     title_str += "</ul>"
     return title_str
 
@@ -170,9 +170,9 @@ def create_report(recent_data: pd.DataFrame, media_average_data: pd.DataFrame) -
     sorted_article_data = recent_data.sort_values(
         by='average_sentiment', ascending=False)
 
-    top_5_titles = sorted_article_data.head(5)["title"]
+    top_5_titles = sorted_article_data.head(4)["title"]
 
-    lowest_5_titles = sorted_article_data.tail(5)["title"]
+    lowest_5_titles = sorted_article_data.tail(4)["title"]
 
     stories_sources_average = media_average_data["average_media_sentiment"]
 
