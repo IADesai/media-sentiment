@@ -131,19 +131,19 @@ def get_last_24_hours_of_data(all_data: pd.DataFrame) -> pd.DataFrame:
     return stories_in_last_24_hours
 
 
-def create_report(recent_data: pd.DataFrame) -> str:  # pragma: no cover
+def create_report(recent_data: pd.DataFrame, all_data: pd.DataFrame) -> str:  # pragma: no cover
     """Creates the HTML template for the report, including all visualizations as
     images within the HTML wrapper.
     """
 
     sorted_article_data = recent_data.sort_values(
-        by='media_sentiment', ascending=False)
+        by='average_sentiment', ascending=False)
 
     top_5_titles = sorted_article_data.head(3)["title"]
 
     lowest_5_titles = sorted_article_data.tail(3)["title"]
 
-    stories_sources_average = recent_data.groupby(
+    stories_sources_average = all_data.groupby(
         "source_name")["media_sentiment"].mean().__round__(2)
 
     bbc_sentiment_score = stories_sources_average.iloc[0]
@@ -205,12 +205,12 @@ def create_report(recent_data: pd.DataFrame) -> str:  # pragma: no cover
 </div>
 
 <div class="widget">
-    <h1>Highest Sentiment stories</h1>
+    <h1>Highest Sentiment Stories</h1>
     {get_titles(top_5_titles)}
 </div>
 
 <div class="widget">
-    <h1>Lowest Sentiment stories</h1>
+    <h1>Lowest Sentiment Stories</h1>
     {get_titles(lowest_5_titles)}
 </div>
 
@@ -299,13 +299,14 @@ def handler(event, context):  # pragma: no cover
     db_conn = get_db_connection()
 
     complete_df = join_all_info(db_conn)
-    complete_df = complete_df.sample(2000)
+    complete_df["average_sentiment"] = (
+        complete_df["media_sentiment"] + complete_df["re_sentiment_mean"])/2
     complete_df.to_csv("joined_all.csv")
     print("joined_all_works")
 
     last_24_hour_data = get_last_24_hours_of_data((complete_df))
 
-    report_template = create_report(last_24_hour_data)
+    report_template = create_report(last_24_hour_data, complete_df)
     print("report_template_works")
 
     convert_html_to_pdf(report_template)
