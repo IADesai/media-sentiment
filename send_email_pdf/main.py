@@ -24,15 +24,15 @@ GREEN = "#199988"
 RED = "#e15759"
 
 
-def join_all_info(conn: connection) -> pd.DataFrame:
+def join_all_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
     "Function that joins all SQL tables."
     query = """SELECT * 
             FROM stories 
-            JOIN sources ON sources.source_id = stories.source_id
-            JOIN story_keyword_link ON story_keyword_link.story_id = stories.story_id
-            JOIN keywords ON keywords.keyword_id = story_keyword_link.keyword_id
-            JOIN reddit_keyword_link ON reddit_keyword_link.keyword_id = keywords.keyword_id
-            JOIN reddit_article ON reddit_article.re_article_id = reddit_keyword_link.re_article_id;"""
+            FULL JOIN sources ON sources.source_id = stories.source_id
+            FULL JOIN story_keyword_link ON story_keyword_link.story_id = stories.story_id
+            FULL JOIN keywords ON keywords.keyword_id = story_keyword_link.keyword_id
+            FULL JOIN reddit_keyword_link ON reddit_keyword_link.keyword_id = keywords.keyword_id
+            FULL JOIN reddit_article ON reddit_article.re_article_id = reddit_keyword_link.re_article_id;"""
     with conn.cursor() as cur:
         cur.execute(query)
         tuples_list = cur.fetchall()
@@ -48,6 +48,21 @@ def join_all_info(conn: connection) -> pd.DataFrame:
                     ]
     complete_df = pd.DataFrame(tuples_list, columns=columns_list)
     return complete_df
+
+
+def get_media_averages(conn: connection) -> pd.DataFrame:   # pragma: no cover
+    "Function that gets the averages of media sentiment for different media outlets"
+    query = """SELECT source_name, AVG(media_sentiment)
+FROM stories
+JOIN sources ON sources.source_id = stories.source_id
+WHERE stories.pub_date BETWEEN NOW() - INTERVAL '24 HOURS' AND NOW()
+GROUP BY source_name;"""
+    with conn.cursor() as cur:
+        cur.execute(query)
+        tuples_list = cur.fetchall()
+    stories_df = pd.DataFrame(tuples_list, columns=[
+        "source_name", "average_media_sentiment"])
+    return stories_df
 
 
 def get_db_connection():   # pragma: no cover
@@ -79,7 +94,15 @@ def get_titles(titles) -> str:
 
 def create_gauge_figure(data, source: str, filename: str, line_color: str) -> None:  # pragma: no cover
     """Creates a formatted gauge figure saved as a .svg file."""
-    gauge_fig = go.Figure(go.Indicator(
+    layout = go.Layout(
+        margin=go.layout.Margin(
+            l=0,  # left margin
+            r=0,  # right margin
+            b=0,  # bottom margin
+            t=50,  # top margin
+        )
+    )
+    gauge_fig = go.Figure(layout=layout, data=[go.Indicator(
         mode="gauge+number+delta",
         value=data,
         domain={'x': [0, 1], 'y': [0, 1]},
@@ -88,7 +111,7 @@ def create_gauge_figure(data, source: str, filename: str, line_color: str) -> No
                        'line': {"color": "white",
                                 "width": 3}},
                'bgcolor': "white"},
-        title={'text': f"{source} Sentiment", "font": {"family": "Arial", "size": 32}}))
+        title={'text': f"{source} Sentiment", "font": {"family": "Arial", "size": 32}})])
     gauge_fig.update_layout(font={"family": "Arial"})
     gauge_fig.write_image(filename)
 
@@ -103,13 +126,21 @@ def choose_line_color(score: float) -> str:
 
 def create_most_popular_topics_bar_chart(data, file_name: str) -> None:    # pragma: no cover
     """Creates a formatted horizontal bar chart saved as a .svg file."""
+    layout = go.Layout(
+        margin=go.layout.Margin(
+            l=0,  # left margin
+            r=0,  # right margin
+            b=0,  # bottom margin
+            t=0,  # top margin
+        )
+    )
     y_list = list(data.keys())
     x_list = list(data.values())
-    horizontal_fig = go.Figure(go.Bar(
+    horizontal_fig = go.Figure(layout=layout, data=[go.Bar(
         x=x_list,
         y=y_list,
-        orientation='h'))
-    horizontal_fig.update_layout(font={"family": "Arial"})
+        orientation='h')])
+    horizontal_fig.update_layout(font={"family": "Arial", "size": 16})
     horizontal_fig.write_image(file_name)
 
 
@@ -131,7 +162,7 @@ def get_last_24_hours_of_data(all_data: pd.DataFrame) -> pd.DataFrame:
     return stories_in_last_24_hours
 
 
-def create_report(recent_data: pd.DataFrame, all_data: pd.DataFrame) -> str:  # pragma: no cover
+def create_report(recent_data: pd.DataFrame, media_average_data: pd.DataFrame) -> str:  # pragma: no cover
     """Creates the HTML template for the report, including all visualizations as
     images within the HTML wrapper.
     """
@@ -139,12 +170,11 @@ def create_report(recent_data: pd.DataFrame, all_data: pd.DataFrame) -> str:  # 
     sorted_article_data = recent_data.sort_values(
         by='average_sentiment', ascending=False)
 
-    top_5_titles = sorted_article_data.head(3)["title"]
+    top_5_titles = sorted_article_data.head(5)["title"]
 
-    lowest_5_titles = sorted_article_data.tail(3)["title"]
+    lowest_5_titles = sorted_article_data.tail(5)["title"]
 
-    stories_sources_average = all_data.groupby(
-        "source_name")["media_sentiment"].mean().__round__(2)
+    stories_sources_average = media_average_data["average_media_sentiment"]
 
     bbc_sentiment_score = stories_sources_average.iloc[0]
     daily_mail_sentiment_score = stories_sources_average.iloc[1]
@@ -171,57 +201,59 @@ def create_report(recent_data: pd.DataFrame, all_data: pd.DataFrame) -> str:  # 
 <style>
     /* Define the CSS styles for your dashboard here */
 
-    .title-container {{
-        display: flex;
-        flex-direction: row;
-    }}
+    html {{ -webkit-print-color-adjust: exact; }}
 
+    body{{
+    background-color: #292929;
+    font-family: Rockwell;
+    }}
     
     .widget {{
         background-color: #fff;
-        padding: 9px;
-        margin-bottom: 10px;
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        padding: 2px;
+        margin-bottom: 2px;
+        border-radius: 2px;
     }}
 
-    .sentiment-container {{
-        display: flex;
-        justify-content: center;
-    }}
     /* Add more styles as needed */
 </style>
 </head>
-<body>
+<body style="background: #292929;">
+
 <div class="title-container">
     <img src="media-sentiment-report-header.png" alt="Media Sentiment Report" class=title-container/>
 </div>
 
-<div class="widget">
-    <div class="sentiment-container">
-        <img style="width: 300px; height: 200px" src = "/tmp/bbc_plot.svg" alt="BBC"/>
-        <img style="width: 300px; height: 200px" src = "/tmp/daily_mail_plot.svg" alt="Daily Mail"/>
-    </div>
-</div>
+<table border="0" style="width:100%;text-align:center">
+<tr>
+<td><img style="width: 300px; height: 200px" src = "/tmp/bbc_plot.svg" alt="BBC"/></td>
+<td><img style="width: 300px; height: 200px" src = "/tmp/daily_mail_plot.svg" alt="Daily Mail"/></td>
+</tr>
+</table>
+
+<h1 style='text-align:center;color:#fff;padding-top:10px;'>Most Popular Topics</h1>
 
 <div class="widget">
-    <h1>Highest Sentiment Stories</h1>
+    <img style="width:800px;height: 300px;text-align:center" src = "/tmp/most_popular_plot.svg" alt="Most Popular"/>
+</div>
+
+<h1 style='text-align:center;color:#88C180;padding-top:10px;'>Highest Sentiment Stories</h1>
+
+<div class="widget">
     {get_titles(top_5_titles)}
 </div>
 
-<div class="widget">
-    <h1>Lowest Sentiment Stories</h1>
-    {get_titles(lowest_5_titles)}
-</div>
+<h1 style='text-align:center;color:#EA898B;padding-top:10px;'>Lowest Sentiment Stories</h1>
 
 <div class="widget">
-    <img style="width: 300px; height: 200px" src = "/tmp/most_popular_plot.svg" alt="Most Popular"/>
+    {get_titles(lowest_5_titles)}
 </div>
 
 <!-- Add more widgets as needed -->
 </body>
 </html>
 '''
+
     return template
 
 
@@ -298,6 +330,10 @@ def handler(event, context):  # pragma: no cover
     load_dotenv()
     db_conn = get_db_connection()
 
+    media_averages = get_media_averages(db_conn)
+    media_averages.to_csv("testing_stories_join.csv")
+    print("joined_stories_works")
+
     complete_df = join_all_info(db_conn)
     complete_df["average_sentiment"] = (
         complete_df["media_sentiment"] + complete_df["re_sentiment_mean"])/2
@@ -306,7 +342,8 @@ def handler(event, context):  # pragma: no cover
 
     last_24_hour_data = get_last_24_hours_of_data((complete_df))
 
-    report_template = create_report(last_24_hour_data, complete_df)
+    report_template = create_report(
+        last_24_hour_data, media_averages)
     print("report_template_works")
 
     convert_html_to_pdf(report_template)
