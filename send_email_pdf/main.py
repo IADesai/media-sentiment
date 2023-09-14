@@ -50,33 +50,6 @@ def join_all_info(conn: connection) -> pd.DataFrame:
     return complete_df
 
 
-def join_all_stories_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
-    "Function that joins the stories and story sources SQL tables."
-    query = """SELECT story_id, title, description,url, pub_date, media_sentiment,
-    source_name FROM stories JOIN sources ON stories.source_id = sources.source_id"""
-    with conn.cursor() as cur:
-        cur.execute(query)
-        tuples_list = cur.fetchall()
-    stories_df = pd.DataFrame(tuples_list, columns=[
-        "story_id", "title", "description", "url", "pub_date",
-        "article_sentiment", "source_name"])
-    return stories_df
-
-
-def join_all_reddit_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
-    "Function that joins all reddit sources SQL tables."
-    query = """SELECT * FROM reddit_article"""
-    with conn.cursor() as cur:
-        cur.execute(query)
-        tuples_list = cur.fetchall()
-    columns_list = ["article_id", "domain", "title", "article_url",
-                    "url", "re_sentiment_mean", "re_sentiment_st_dev",
-                    "re_sentiment_median", "re_vote_score", "re_upvote_ratio",
-                    "re_post_comments", "re_processed_comments", "re_created_timestamp"]
-    reddit_df = pd.DataFrame(tuples_list, columns=columns_list)
-    return reddit_df
-
-
 def get_db_connection():   # pragma: no cover
     """Establishes a connection with the PostgreSQL database."""
     try:
@@ -141,11 +114,9 @@ def create_most_popular_topics_bar_chart(data, file_name: str) -> None:    # pra
     horizontal_fig.show()
 
 
-def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame, all_data: pd.DataFrame) -> str:  # pragma: no cover
-    """Creates the HTML template for the report, including all visualizations as
-    images within the HTML wrapper.
-    """
-
+def get_last_24_hours_of_data(all_data: pd.DataFrame) -> pd.DataFrame:
+    """Function that filters out all data to the data from the
+    last 24 hours only"""
     all_data["article_datetime"] = pd.to_datetime(
         all_data['pub_date'])
     all_data["reddit_datetime"] = pd.to_datetime(
@@ -154,22 +125,26 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame, all_dat
     now = datetime.now()
     one_day = timedelta(days=1)
 
-    articles_in_last_24_hours = all_data[
-        (now - all_data["article_datetime"] < one_day)]
-
-    reddit_and_articles_in_last_24_hours = all_data[
+    stories_in_last_24_hours = all_data[
         (now - all_data["article_datetime"] < one_day) &
         (now - all_data["reddit_datetime"] < one_day)]
 
-    # Sort the stories_data DataFrame by article_sentiment in descending order
-    sorted_article_data = reddit_and_articles_in_last_24_hours.sort_values(
+    return stories_in_last_24_hours
+
+
+def create_report(recent_data: pd.DataFrame) -> str:  # pragma: no cover
+    """Creates the HTML template for the report, including all visualizations as
+    images within the HTML wrapper.
+    """
+
+    sorted_article_data = recent_data.sort_values(
         by='media_sentiment', ascending=False)
 
     top_5_titles = sorted_article_data.head(3)["title"]
 
     lowest_5_titles = sorted_article_data.tail(3)["title"]
 
-    stories_sources_average = stories_data.groupby(
+    stories_sources_average = recent_data.groupby(
         "source_name")["article_sentiment"].mean().__round__(2)
 
     bbc_sentiment_score = stories_sources_average.iloc[0]
@@ -184,7 +159,7 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame, all_dat
     create_gauge_figure(
         daily_mail_sentiment_score, "Daily Mail", "/tmp/daily_mail_plot.svg", daily_mail_line_color)
 
-    most_popular_topics = reddit_and_articles_in_last_24_hours["keyword"].value_counts().head(
+    most_popular_topics = recent_data["keyword"].value_counts().head(
         5).sort_values(
         ascending=True).to_dict()
 
@@ -324,19 +299,14 @@ def handler(event, context):  # pragma: no cover
     load_dotenv()
     db_conn = get_db_connection()
 
-    joined_stories_df = join_all_stories_info(db_conn)
-    print("joined_stories_works")
-
-    joined_reddit_df = join_all_reddit_info(db_conn)
-    print("joined_reddit_works")
-
     complete_df = join_all_info(db_conn)
     complete_df = complete_df.sample(2000)
     complete_df.to_csv("joined_all.csv")
     print("joined_all_works")
 
-    report_template = create_report(
-        joined_stories_df, joined_reddit_df, complete_df)
+    last_24_hour_data = get_last_24_hours_of_data((complete_df))
+
+    report_template = create_report(last_24_hour_data)
     print("report_template_works")
 
     convert_html_to_pdf(report_template)
