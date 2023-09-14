@@ -332,13 +332,11 @@ def handler(event, context):  # pragma: no cover
     db_conn = get_db_connection()
 
     media_averages = get_media_averages(db_conn)
-    media_averages.to_csv("testing_stories_join.csv")
     print("joined_stories_works")
 
     complete_df = join_all_info(db_conn)
     complete_df["average_sentiment"] = (
         complete_df["media_sentiment"] + complete_df["re_sentiment_mean"])/2
-    complete_df.to_csv("joined_all.csv")
     print("joined_all_works")
 
     last_24_hour_data = get_last_24_hours_of_data((complete_df))
