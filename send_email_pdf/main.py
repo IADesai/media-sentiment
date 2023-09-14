@@ -88,7 +88,7 @@ def create_gauge_figure(data, source: str, filename: str, line_color: str) -> No
                        'line': {"color": "white",
                                 "width": 3}},
                'bgcolor': "white"},
-        title={'text': f"{source} Average Sentiment", "font": {"family": "Arial", "size": 32}}))
+        title={'text': f"{source} Sentiment", "font": {"family": "Arial", "size": 32}}))
     gauge_fig.update_layout(font={"family": "Arial"})
     gauge_fig.write_image(filename)
 
@@ -111,7 +111,6 @@ def create_most_popular_topics_bar_chart(data, file_name: str) -> None:    # pra
         orientation='h'))
     horizontal_fig.update_layout(font={"family": "Arial"})
     horizontal_fig.write_image(file_name)
-    horizontal_fig.show()
 
 
 def get_last_24_hours_of_data(all_data: pd.DataFrame) -> pd.DataFrame:
@@ -145,7 +144,7 @@ def create_report(recent_data: pd.DataFrame) -> str:  # pragma: no cover
     lowest_5_titles = sorted_article_data.tail(3)["title"]
 
     stories_sources_average = recent_data.groupby(
-        "source_name")["article_sentiment"].mean().__round__(2)
+        "source_name")["media_sentiment"].mean().__round__(2)
 
     bbc_sentiment_score = stories_sources_average.iloc[0]
     daily_mail_sentiment_score = stories_sources_average.iloc[1]
