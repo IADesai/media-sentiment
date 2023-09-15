@@ -9,9 +9,19 @@ import requests
 
 TITLE = "title"
 PROMPT = """Generate three words for each story's main topics.
-For example, the headline 'Sunak questioned by Police Service of Northern Ireland for vandalism" should return the topics "Politics, Crime, Law", while the headline 'Royal family requests giant pandas to return to China in December' should return "Animals, China, Monarchy".
-You must return only one word for each topic. Make sure topics are broad to allow grouping stories by topic easier, for example, if Queen Elizabeth or Prince Harry are mentioned in the story, one of the three output topics should be 'Monarchy', or an output topic may be 'Crime' if the story is about theft. Good topics include but are not limited to: Monarchy, Relationships, Football, War, Shopping, Crime, Law, Politics, Education, Scandal, Finance, Climate, Government, Accident.
-The output for each story MUST be in a Python dictionary format where the key corresponds to the INT provided with the story and its paired value being a list of the topics (do not return the title under any circumstances). Here's an example output for two stories: "[{3: ['Weather', 'History', 'Technology']}, {4: ['Health', 'Science', 'Celebrity']}]", output a list of dictionaries for these stories: """
+For example, the headline 'Sunak questioned by Police Service of Northern Ireland for vandalism" should return 
+the topics "Politics, Crime, Law", while the headline 'Royal family requests giant pandas to return to China 
+in December' should return "Animals, China, Monarchy".
+You must return only one word for each topic. Make sure topics are broad to allow grouping stories by 
+topic easier, for example, if Queen Elizabeth or Prince Harry are mentioned in the story, one of the 
+three output topics should be 'Monarchy', or an output topic may be 'Crime' if the story is about theft. 
+Good topics include but are not limited to: Monarchy, Relationships, Football, War, Shopping, Crime, Law, 
+Politics, Education, Scandal, Finance, Climate, Government, Accident.
+The output for each story MUST be in a Python dictionary format where the key corresponds to the INT 
+provided with the story and its paired value being a list of the topics (do not return the 
+title under any circumstances). Here's an example output for two stories: 
+"[{3: ['Weather', 'History', 'Technology']}, {4: ['Health', 'Science', 'Celebrity']}]", 
+output a list of dictionaries for these stories: """
 MAX_LIST_SIZE = 50
 CURRENT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 JSON_FILE = f'response.json'
