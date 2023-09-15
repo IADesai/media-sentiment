@@ -33,3 +33,4 @@ For more detailed setup, check the individual README files within each folder.
 <img src="maindashboardfilter.png" alt="Dashboard Header With Filter" width="1000"/>
 <img src="dashboardwordcloud.png" alt="Dashboard Word Cloud" width="1000"/>
 <img src="dashboardwordcloudfilter.png" alt="Dashboard Word Cloud With Filter" width="1000"/>
+<img src="storycountbytopic.png" alt="Story Count By Topic" width="1000"/>
