@@ -4,7 +4,6 @@ then uploads the pdf to an s3 bucket and sends an email of the pdf."""
 
 import sys
 from os import environ
-import json
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from datetime import datetime, timedelta
@@ -319,8 +318,7 @@ def send_email(email_message: MIMEMultipart) -> None:  # pragma: no cover
     ses_client = client("ses", aws_access_key_id=environ.get("ACCESS_KEY"),
                         aws_secret_access_key=environ.get("SECRET_KEY"))
     ses_client.send_raw_email(Source=environ.get("EMAIL_SENDER"),
-                              Destinations=json.loads(
-                                  environ["EMAIL_RECIPIENT"]),
+                              Destinations=environ.get("EMAIL_RECIPIENT"),
                               RawMessage={"Data": email_message.as_string()})
     print("Email sent.")
 
