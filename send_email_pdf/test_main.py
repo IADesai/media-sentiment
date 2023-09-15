@@ -67,8 +67,8 @@ def test_correct_html_string_returned_for_get_titles():
     res = get_titles(titles)
 
     assert res == "<ul>" + \
-        "<li>First Title</li>" + \
-        "<li>Second title.</li>" + \
+        "<li style='font-size:12px';><b>First Title</b></li>" + \
+        "<li style='font-size:12px';><b>Second title.</b></li>" + \
         "</ul>"
 
 
