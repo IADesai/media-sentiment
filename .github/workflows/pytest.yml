@@ -27,6 +27,7 @@ jobs:
         pip install -r ./public_sentiment_pipeline/requirements.txt
         pip install -r ./rss_pipeline/requirements.txt
         pip install -r ./send_email_pdf/requirements.txt
+        pip install -r ./tagging_pipeline/requirements.txt
     - name: Test with pytest
       run: |
         pytest

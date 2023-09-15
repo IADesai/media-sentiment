@@ -52,7 +52,8 @@ CREATE TABLE reddit_keyword_link(
     re_article_id INT,
     PRIMARY KEY (re_link_id),
     FOREIGN KEY (keyword_id) REFERENCES keywords(keyword_id),
-    FOREIGN KEY (re_article_id) REFERENCES reddit_article(re_article_id)
+    FOREIGN KEY (re_article_id) REFERENCES reddit_article(re_article_id),
+    ADD CONSTRAINT re_unique_id_pairs UNIQUE (keyword_id, re_article_id)
 );
 
 CREATE TABLE story_keyword_link(
@@ -61,8 +62,11 @@ CREATE TABLE story_keyword_link(
     story_id INT,
     PRIMARY KEY (link_id),
     FOREIGN KEY (keyword_id) REFERENCES keywords(keyword_id),
-    FOREIGN KEY (story_id) REFERENCES stories(story_id)
+    FOREIGN KEY (story_id) REFERENCES stories(story_id),
+    ADD CONSTRAINT unique_id_pairs UNIQUE (keyword_id, story_id)
 );
 
 INSERT INTO sources (source_name) VALUES ('bbc');
 INSERT INTO sources (source_name) VALUES ('dailymail');
+
+
