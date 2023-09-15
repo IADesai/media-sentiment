@@ -1,4 +1,11 @@
-# Media Sentiment Pipeline
+# RSS (Media Sentiment) Pipeline
+
+## What it does
+
+This pipeline extracts information from the news site's RSS feeds and cleans the data by removing unnecessary information
+such as headline tags and converting data types. The full article is then web scraped using the URLs provided in the RSS feed
+and sentiment analysis is performed on this using NLTK's VADER model with the compound score calculated. All of this
+information is then loaded onto the remote database.
 
 ## Configure development environment
 

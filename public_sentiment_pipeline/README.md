@@ -1,5 +1,12 @@
 # Public Sentiment Pipeline
 
+## What it does
+
+This pipeline extracts information from a subreddit using the Reddit API and extracts all the comments across a defined range of pages. The comments
+are then cleaned by removing markdown formatting and also comments that have been removed by Reddit themselves, this was primarily done using RegEx.
+Sentiment analysis is performed on this using NLTK's VADER model with the compound score calculated. All of this
+information is then loaded onto the remote database.
+
 ## Configure development environment
 
 Create a Python [virtual environment](https://docs.python.org/3/library/venv.html) and install necessary packages:

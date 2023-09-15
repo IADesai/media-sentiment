@@ -1,6 +1,8 @@
 # PDF Visualisation Reports
 
-The code in this directory creates a PDF containing charts using the most recent data. These are sent as attachments in emails using the AWS email service and uploaded to an S3 bucket as a pdf archive.
+## What it does
+
+This pipeline reads in information that has been loaded on the remote database and extracts relevant information relating to the last 24 hours. A PDF containing charts and information blocks is then created and formatted in a way in which resembles a newsletter. This PDF file is then sent as an attachment within the email using the AWS email service and also uploaded to an S3 bucket for archiving purposes.
 
 ## Required environment variables
 
