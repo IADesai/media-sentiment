@@ -1,11 +1,9 @@
-beautifulsoup4
-lxml
-nltk
 psycopg2-binary
-pandas
 python-dotenv
 pylint
 pytest
+openai
 requests
-nltk
-
+boto3
+pandas
+spacy
