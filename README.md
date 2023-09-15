@@ -11,7 +11,7 @@ Despite reporting on the same topics, different media organisations can have wil
 
 ## About the Project
 
-This project extracts UK news articles from different RSS feeds and finds related articles from other news feeds as well as comments about that story/topic on Reddit. Sentiment analysis is then applied to these news articles and social media comments and scores them depending on how positive/negative they are (-1 being the most negative, 1 being the most positive). The articles then have their topic keywords extracted using ChatGPT, this allows for articles/social media posts talking about the same news story/topic can be linked together. All of this information is then loaded onto an RDS which is running PostgreSQL. From the RDS, we visualise the wide variety of information we have gathered via a Tableau dashboard and also send out an email report with a PDF attached showing the most popular stories of the day amongst other key insights.  
+This project extracts UK news articles from different RSS feeds and finds related articles from other news feeds as well as comments about that story/topic on Reddit. Sentiment analysis is then applied to these news articles and social media comments and scores them depending on how positive/negative they are (-1 being the most negative, 1 being the most positive). The articles then have their topic keywords extracted using ChatGPT, this allows for articles/social media posts talking about the same news story/topic can be linked together. All of this information is then loaded onto an RDS which is running PostgreSQL. From the RDS, we visualise the wide variety of information we have gathered via a Tableau dashboard and also send out an email report with a PDF attached showing the most popular stories of the day amongst other key insights.
 
 ## About the Repo
 
@@ -26,3 +26,10 @@ For more detailed setup, check the individual README files within each folder.
 ## Architecture Diagram
 
 <img src="architecture-diagram.svg" alt="Architecture Diagram" width="1000"/>
+
+## Tableau Dashboard Preview
+
+<img src="maindashboard.png" alt="Dashboard Header" width="1000"/>
+<img src="maindashboardfilter.png" alt="Dashboard Header With Filter" width="1000"/>
+<img src="dashboardwordcloud.png" alt="Dashboard Word Cloud" width="1000"/>
+<img src="dashboardwordcloudfilter.png" alt="Dashboard Word Cloud With Filter" width="1000"/>
