@@ -1,3 +1,8 @@
+# pylint: disable=E1101
+
+"""Functions for the tagging pipeline."""
+
+
 from os import environ
 import time
 

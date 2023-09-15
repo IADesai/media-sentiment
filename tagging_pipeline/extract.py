@@ -32,7 +32,8 @@ def get_media_stories(conn) -> list | None:
     with conn.cursor() as cur:
         cur.execute(
             """SELECT stories.story_id, stories.title FROM stories LEFT JOIN story_keyword_link 
-            ON stories.story_id = story_keyword_link.story_id WHERE story_keyword_link.story_id IS NULL ORDER BY RANDOM();"""
+            ON stories.story_id = story_keyword_link.story_id WHERE story_keyword_link.story_id 
+            IS NULL ORDER BY RANDOM();"""
         )
         stories = cur.fetchall()
         return stories if stories else None
@@ -42,8 +43,10 @@ def get_reddit_stories(conn) -> list | None:
     """Queries RDS to return reddit story title and id that do not have keywords linked to them"""
     with conn.cursor() as cur:
         cur.execute(
-            """SELECT reddit_article.re_article_id, reddit_article.re_title FROM reddit_article LEFT JOIN reddit_keyword_link 
-            ON reddit_article.re_article_id = reddit_keyword_link.re_article_id WHERE reddit_keyword_link.re_article_id IS NULL ORDER BY RANDOM();"""
+            """SELECT reddit_article.re_article_id, reddit_article.re_title FROM reddit_article 
+            LEFT JOIN reddit_keyword_link 
+            ON reddit_article.re_article_id = reddit_keyword_link.re_article_id WHERE 
+            reddit_keyword_link.re_article_id IS NULL ORDER BY RANDOM();"""
         )
         re_stories = cur.fetchall()
         return re_stories if re_stories else None
