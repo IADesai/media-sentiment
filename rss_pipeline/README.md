@@ -1,21 +1,45 @@
-# RSS-Pipeline
+# Media Sentiment Pipeline
 
-## Setup
+## Configure development environment
 
-1. Activate a new virtual environment.
-2. Run `pip install -r requirements.txt`
-3. Create an .env file, storing the following environment variables:
+Create a Python [virtual environment](https://docs.python.org/3/library/venv.html) and install necessary packages:
 
+```sh
+python3 -m venv venv
+source ./venv/bin/activate
+pip3 install -r requirements.txt
 ```
-ACCESS_KEY_ID=XXXX
-SECRET_ACCESS_KEY=XXXX
-DATABASE_NAME=XXXX
-DATABASE_USERNAME=XXXX
-DATABASE_PASSWORD=XXXX
-DATABASE_IP=XXXX
-DATABASE_PORT=XXXX
-```
+
+## Required environment variables
+
+The following environment variables must be supplied in a .env file in order to run the code in this directory.
+
+- `ACCESS_KEY_ID`
+- `SECRET_ACCESS_KEY`
+- `DATABASE_NAME`
+- `DATABASE_USERNAME`
+- `DATABASE_PASSWORD`
+- `DATABASE_IP`
+- `DATABASE_PORT`
 
 ## Running the pipeline
 
-Run the entire RSS pipeline using `python3 deploy_pipeline.py`
+Execute the media sentiment pipeline by running:
+
+```sh
+python3 deploy_pipeline.py
+```
+
+## Docker image
+
+Building a Docker image for AWS Lambda.
+
+```sh
+docker build -t media-sentiment-pipeline . --platform "linux/amd64"
+```
+
+Run the Docker image.
+
+```sh
+docker run -t --env-file .env media-sentiment-pipeline
+```

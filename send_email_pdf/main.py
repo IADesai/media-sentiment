@@ -6,7 +6,8 @@ import sys
 from os import environ
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-from datetime import datetime
+from datetime import datetime, timedelta
+import re
 
 from dotenv import load_dotenv
 from psycopg2.extensions import connection
@@ -23,31 +24,45 @@ GREEN = "#199988"
 RED = "#e15759"
 
 
-def join_all_stories_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
-    "Function that joins the stories and story sources SQL tables"
-    query = """SELECT story_id, title, description,url, pub_date, media_sentiment,
-    source_name FROM stories JOIN sources ON stories.source_id = sources.source_id"""
+def join_all_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
+    "Function that joins all SQL tables."
+    query = """SELECT * 
+            FROM stories 
+            FULL JOIN sources ON sources.source_id = stories.source_id
+            FULL JOIN story_keyword_link ON story_keyword_link.story_id = stories.story_id
+            FULL JOIN keywords ON keywords.keyword_id = story_keyword_link.keyword_id
+            FULL JOIN reddit_keyword_link ON reddit_keyword_link.keyword_id = keywords.keyword_id
+            FULL JOIN reddit_article ON reddit_article.re_article_id = reddit_keyword_link.re_article_id;"""
+    with conn.cursor() as cur:
+        cur.execute(query)
+        tuples_list = cur.fetchall()
+    columns_list = ["story_id", "source_id", "title", "description",
+                    "url", "pub_date", "media_sentiment",
+                    "source_id", "source_name",
+                    "link_id", "keyword_id", "story_id",
+                    "keyword_id", "keyword",
+                    "re_link_id", "keyword_id", "re_article_id",
+                    "re_article_id", "re_domain", "re_title", "re_article_url", "re_url", "re_sentiment_mean",
+                    "re_sentiment_st_dev", "re_sentiment_median", "re_vote_score", "re_upvote_ratio", "re_post_comments",
+                    "re_processed_comments", "re_created_timestamp"
+                    ]
+    complete_df = pd.DataFrame(tuples_list, columns=columns_list)
+    return complete_df
+
+
+def get_media_averages(conn: connection) -> pd.DataFrame:   # pragma: no cover
+    "Function that gets the averages of media sentiment for different media outlets"
+    query = """SELECT source_name, AVG(media_sentiment)
+FROM stories
+JOIN sources ON sources.source_id = stories.source_id
+WHERE stories.pub_date BETWEEN NOW() - INTERVAL '24 HOURS' AND NOW()
+GROUP BY source_name ORDER BY source_name;"""
     with conn.cursor() as cur:
         cur.execute(query)
         tuples_list = cur.fetchall()
     stories_df = pd.DataFrame(tuples_list, columns=[
-        "story_id", "title", "description", "url", "pub_date",
-        "article_sentiment", "source_name"])
+        "source_name", "average_media_sentiment"])
     return stories_df
-
-
-def join_all_reddit_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
-    "Function that joins all reddit sources SQL tables"
-    query = """SELECT * FROM reddit_article"""
-    with conn.cursor() as cur:
-        cur.execute(query)
-        tuples_list = cur.fetchall()
-    columns_list = ["article_id", "domain", "title", "article_url",
-                    "url", "re_sentiment_mean", "re_sentiment_st_dev",
-                    "re_sentiment_median", "re_vote_score", "re_upvote_ratio",
-                    "re_post_comments", "re_processed_comments", "re_created_timestamp"]
-    reddit_df = pd.DataFrame(tuples_list, columns=columns_list)
-    return reddit_df
 
 
 def get_db_connection():   # pragma: no cover
@@ -68,17 +83,26 @@ def get_db_connection():   # pragma: no cover
 
 def get_titles(titles) -> str:
     """Function that takes out all the title names from the top stories
-    and returns them as a html ready string"""
+    and returns them as a HTML ready string.
+    """
     title_str = "<ul>"
     for title in titles:
-        title_str += f"<li>{title}</li>"
+        title_str += f"<li style='font-size:12px';><b>{title}</b></li>"
     title_str += "</ul>"
     return title_str
 
 
 def create_gauge_figure(data, source: str, filename: str, line_color: str) -> None:  # pragma: no cover
     """Creates a formatted gauge figure saved as a .svg file."""
-    gauge_fig = go.Figure(go.Indicator(
+    layout = go.Layout(
+        margin=go.layout.Margin(
+            l=0,  # left margin
+            r=0,  # right margin
+            b=0,  # bottom margin
+            t=50,  # top margin
+        )
+    )
+    gauge_fig = go.Figure(layout=layout, data=[go.Indicator(
         mode="gauge+number+delta",
         value=data,
         domain={'x': [0, 1], 'y': [0, 1]},
@@ -87,7 +111,7 @@ def create_gauge_figure(data, source: str, filename: str, line_color: str) -> No
                        'line': {"color": "white",
                                 "width": 3}},
                'bgcolor': "white"},
-        title={'text': f"{source} Average Sentiment", "font": {"family": "Arial", "size": 32}}))
+        title={'text': f"{source} Sentiment", "font": {"family": "Arial", "size": 40}})])
     gauge_fig.update_layout(font={"family": "Arial"})
     gauge_fig.write_image(filename)
 
@@ -100,27 +124,57 @@ def choose_line_color(score: float) -> str:
         return RED
 
 
-def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
+def create_most_popular_topics_bar_chart(data, file_name: str) -> None:    # pragma: no cover
+    """Creates a formatted horizontal bar chart saved as a .svg file."""
+    layout = go.Layout(
+        margin=go.layout.Margin(
+            l=0,  # left margin
+            r=0,  # right margin
+            b=0,  # bottom margin
+            t=0,  # top margin
+        )
+    )
+    y_list = list(data.keys())
+    x_list = list(data.values())
+    horizontal_fig = go.Figure(layout=layout, data=[go.Bar(
+        x=x_list,
+        y=y_list,
+        orientation='h')])
+    horizontal_fig.update_layout(font={"family": "Arial", "size": 16})
+    horizontal_fig.write_image(file_name)
+
+
+def get_last_24_hours_of_data(all_data: pd.DataFrame) -> pd.DataFrame:
+    """Function that filters out all data to the data from the
+    last 24 hours only"""
+    all_data["article_datetime"] = pd.to_datetime(
+        all_data['pub_date'])
+    all_data["reddit_datetime"] = pd.to_datetime(
+        all_data['re_created_timestamp'])
+
+    now = datetime.now()
+    one_day = timedelta(days=1)
+
+    stories_in_last_24_hours = all_data[
+        (now - all_data["article_datetime"] < one_day) &
+        (now - all_data["reddit_datetime"] < one_day)]
+
+    return stories_in_last_24_hours
+
+
+def create_report(recent_data: pd.DataFrame, media_average_data: pd.DataFrame) -> str:  # pragma: no cover
     """Creates the HTML template for the report, including all visualizations as
-    images within the html wrapper"""
+    images within the HTML wrapper.
+    """
 
-    # Sort the stories_data DataFrame by article_sentiment in descending order
-    sorted_article_data = stories_data.sort_values(
-        by='article_sentiment', ascending=False)
+    sorted_article_data = recent_data.sort_values(
+        by='average_sentiment', ascending=False)
 
-    top_5_stories_titles = sorted_article_data.head(5)["title"]
+    top_5_titles = sorted_article_data.head(4)["title"]
 
-    lowest_5_stories_titles = sorted_article_data.tail(5)["title"]
+    lowest_5_titles = sorted_article_data.tail(4)["title"]
 
-    sorted_reddit_data = reddit_data.sort_values(
-        by='re_sentiment_mean', ascending=False)
-
-    top_5_reddit_titles = sorted_reddit_data.head(5)["title"]
-
-    lowest_5_reddit_titles = sorted_reddit_data.tail(5)["title"]
-
-    stories_sources_average = stories_data.groupby(
-        "source_name")["article_sentiment"].mean().__round__(2)
+    stories_sources_average = media_average_data["average_media_sentiment"]
 
     bbc_sentiment_score = stories_sources_average.iloc[0]
     daily_mail_sentiment_score = stories_sources_average.iloc[1]
@@ -134,75 +188,76 @@ def create_report(stories_data: pd.DataFrame, reddit_data: pd.DataFrame) -> str:
     create_gauge_figure(
         daily_mail_sentiment_score, "Daily Mail", "/tmp/daily_mail_plot.svg", daily_mail_line_color)
 
+    most_popular_topics = recent_data["keyword"].value_counts().head(
+        5).sort_values(
+        ascending=True).to_dict()
+
+    create_most_popular_topics_bar_chart(
+        most_popular_topics, "/tmp/most_popular_plot.svg")
+
     template = f'''
 <html>
 <head>
 <style>
     /* Define the CSS styles for your dashboard here */
 
-    .title-container {{
-        display: flex;
-        flex-direction: row;
-    }}
+    html {{ -webkit-print-color-adjust: exact; }}
 
+    body{{
+    background-color: #292929;
+    font-family: Rockwell;
+    }}
     
     .widget {{
         background-color: #fff;
-        padding: 9px;
-        margin-bottom: 10px;
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        padding: 2px;
+        border-radius: 2px;
     }}
 
-    .sentiment-container {{
-        display: flex;
-        justify-content: center;
-    }}
     /* Add more styles as needed */
 </style>
 </head>
-<body>
+<body style="background: #292929;">
+
 <div class="title-container">
-    <img style="width: 50px; height: 50px; margin-bottom: 10px;" src="SL_Favicon-45.png" alt="Logo" class=title-container/>
-    <span style="text-align:center;font-size:250%;">Media Sentiment Daily Quarter Report</span>
+    <img src="media-sentiment-report-header.png" alt="Media Sentiment Report" class=title-container/>
 </div>
 
-<div class="widget">
-    <div class="sentiment-container">
-        <img style="width: 300px; height: 200px" src = "/tmp/bbc_plot.svg" alt="BBC"/>
-        <img style="width: 300px; height: 200px" src = "/tmp/daily_mail_plot.svg" alt="Daily Mail"/>
-    </div>
-</div>
+<table border="0" style="width:100%;text-align:center">
+<tr>
+<td><img style="width: 260px; height: 160px" src = "/tmp/bbc_plot.svg" alt="BBC"/></td>
+<td><img style="width: 260px; height: 160px" src = "/tmp/daily_mail_plot.svg" alt="Daily Mail"/></td>
+</tr>
+</table>
+
+<h1 style='text-align:center;color:#fff;padding-top:10px;'>Most Popular Topics</h1>
 
 <div class="widget">
-    <h1>Highest article sentiment stories</h1>
-    {get_titles(top_5_stories_titles)}
+    <img style="width:600px;height: 300px;text-align:center" src = "/tmp/most_popular_plot.svg" alt="Most Popular"/>
 </div>
 
-<div class="widget">
-    <h1>Lowest article sentiment stories</h1>
-    {get_titles(lowest_5_stories_titles)}
-</div>
+<h1 style='text-align:center;color:#88C180;padding-top:10px;'>Highest Sentiment Stories</h1>
 
 <div class="widget">
-    <h1>Highest reddit sentiment stories</h1>
-    {get_titles(top_5_reddit_titles)}
+    {get_titles(top_5_titles)}
 </div>
 
+<h1 style='text-align:center;color:#EA898B;padding-top:10px;'>Lowest Sentiment Stories</h1>
+
 <div class="widget">
-    <h1>Lowest reddit sentiment stories</h1>
-    {get_titles(lowest_5_reddit_titles)}
+    {get_titles(lowest_5_titles)}
 </div>
 
 <!-- Add more widgets as needed -->
 </body>
 </html>
 '''
+
     return template
 
 
 def convert_html_to_pdf(html_template: str) -> bool:   # pragma: no cover
-    """Converts the HTML template provided into a pdf report file"""
+    """Converts the HTML template provided into a pdf report file."""
     # open output file for writing (truncated binary)
     if not isinstance(html_template, str):
         raise ValueError("The HTML template should be provided as a string")
@@ -214,16 +269,20 @@ def convert_html_to_pdf(html_template: str) -> bool:   # pragma: no cover
     return pisa_status.err
 
 
+def create_filename_for_s3_pdf() -> str:
+    """Returns a filename for the uploaded pdf using the current date and time."""
+    filename = re.sub(r"(.+)\.pdf", "\\1", PDF_FILE_NAME)
+    date_time = datetime.now().strftime("%Y_%m_%d-%H_%M_%S_")
+    return date_time + filename + ".pdf"
+
+
 def upload_to_s3() -> None:   # pragma: no cover
-    """Function that uploads the created pdf to an s3 bucket"""
+    """Function that uploads the created pdf to an S3 bucket."""
     print("Establishing connection to AWS.")
     s3_client = client("s3", aws_access_key_id=environ.get("ACCESS_KEY"),
                        aws_secret_access_key=environ.get("SECRET_KEY"))
     print("Connection established.")
-    file_split = PDF_FILE_NAME.split(".")
-    date_time = datetime.now().strftime("%d_%m_%Y, %H:%M:%S")
-    file_split[0] += f"({date_time})"
-    file_name_with_date_and_time = ".".join(file_split)
+    file_name_with_date_and_time = create_filename_for_s3_pdf()
     print("Uploading .pdf file.")
     s3_client.upload_file(
         PDF_FILE_PATH, environ.get("BUCKET_NAME"), file_name_with_date_and_time)
@@ -259,24 +318,29 @@ def send_email(email_message: MIMEMultipart) -> None:  # pragma: no cover
     ses_client = client("ses", aws_access_key_id=environ.get("ACCESS_KEY"),
                         aws_secret_access_key=environ.get("SECRET_KEY"))
     ses_client.send_raw_email(Source=environ.get("EMAIL_SENDER"),
-                              Destinations=[environ.get("EMAIL_RECIPIENT")],
+                              Destinations=environ.get("EMAIL_RECIPIENT"),
                               RawMessage={"Data": email_message.as_string()})
     print("Email sent.")
 
 
-def handler(event, context):
-    """Lambda handler function"""
+def handler(event, context):  # pragma: no cover
+    """Lambda handler function."""
 
     load_dotenv()
     db_conn = get_db_connection()
 
-    joined_stories_df = join_all_stories_info(db_conn)
+    media_averages = get_media_averages(db_conn)
     print("joined_stories_works")
 
-    joined_reddit_df = join_all_reddit_info(db_conn)
-    print("joined_reddit_works")
+    complete_df = join_all_info(db_conn)
+    complete_df["average_sentiment"] = (
+        complete_df["media_sentiment"] + complete_df["re_sentiment_mean"])/2
+    print("joined_all_works")
 
-    report_template = create_report(joined_stories_df, joined_reddit_df)
+    last_24_hour_data = get_last_24_hours_of_data((complete_df))
+
+    report_template = create_report(
+        last_24_hour_data, media_averages)
     print("report_template_works")
 
     convert_html_to_pdf(report_template)

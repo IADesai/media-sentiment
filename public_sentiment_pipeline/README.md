@@ -2,20 +2,12 @@
 
 ## Configure development environment
 
-Create a Python virtual environment and install necessary packages.
+Create a Python [virtual environment](https://docs.python.org/3/library/venv.html) and install necessary packages:
 
 ```sh
 python3 -m venv venv
 source ./venv/bin/activate
 pip3 install -r requirements.txt
-```
-
-## Run the code
-
-Run the pipeline script.
-
-```sh
-python3 load.py
 ```
 
 ## Required environment variables
@@ -35,6 +27,14 @@ The following environment variables must be supplied in a .env file in order to 
 - `DATABASE_IP`
 - `DATABASE_PASSWORD`
 
+## Running the pipeline
+
+Execute the public sentiment pipeline by running:
+
+```sh
+python3 load.py
+```
+
 ## Archiving
 
 JSON files fetched from Reddit for each page are archived in an S3 bucket. They are named after the time they are created followed by the title.
@@ -44,6 +44,8 @@ JSON files fetched from Reddit for each page are archived in an S3 bucket. They 
 The pipeline processes 40 pages from a selected subreddit. The subreddit is chosen using the environment variable `REDDIT_TOPIC`. The number of pages to process is controlled from the global variable `MAX_REDDIT_PAGES` in `extract.py`. From each page 500 comments are processed. This value is set by the global variable `MAX_REDDIT_COMMENTS` in `extract.py`.
 
 Formatting in comments that cannot be recognised by Vader is removed. `£`, `'`, `"` and `&` are kept in the comments. Other characters such as new lines or hyphens are removed. Markdown formatting such as web links are also removed, however, the text for the link is retained. Additionally, comments that do not contain the original intended text, such as `"**Removed/warning**"`, are removed entirely. This influences the parameter `included_comment_count`.
+
+For a Reddit page to be added to the database the number of processed comments must be greater than or equal to 5. This is set by `MIN_PROCESSED_COMMENTS` in `extract.py`. This minimum is set to ensure that readings taken from the database produce a representative sample, and that stories with few comments do not sway the findings made from the data interpretation.
 
 ## Docker image
 
