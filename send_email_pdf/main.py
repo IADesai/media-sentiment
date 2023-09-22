@@ -24,30 +24,28 @@ GREEN = "#199988"
 RED = "#e15759"
 
 
-def join_all_info(conn: connection) -> pd.DataFrame:   # pragma: no cover
+def get_top_stories(conn: connection) -> pd.DataFrame:   # pragma: no cover
     "Function that joins all SQL tables."
-    query = """SELECT * 
-            FROM stories 
-            FULL JOIN sources ON sources.source_id = stories.source_id
-            FULL JOIN story_keyword_link ON story_keyword_link.story_id = stories.story_id
-            FULL JOIN keywords ON keywords.keyword_id = story_keyword_link.keyword_id
-            FULL JOIN reddit_keyword_link ON reddit_keyword_link.keyword_id = keywords.keyword_id
-            FULL JOIN reddit_article ON reddit_article.re_article_id = reddit_keyword_link.re_article_id;"""
+    query = """SELECT title from stories WHERE stories.pub_date BETWEEN NOW() - INTERVAL '24 HOURS'
+    AND NOW() ORDER BY media_sentiment DESC LIMIT 3;"""
     with conn.cursor() as cur:
         cur.execute(query)
         tuples_list = cur.fetchall()
-    columns_list = ["story_id", "source_id", "title", "description",
-                    "url", "pub_date", "media_sentiment",
-                    "source_id", "source_name",
-                    "link_id", "keyword_id", "story_id",
-                    "keyword_id", "keyword",
-                    "re_link_id", "keyword_id", "re_article_id",
-                    "re_article_id", "re_domain", "re_title", "re_article_url", "re_url", "re_sentiment_mean",
-                    "re_sentiment_st_dev", "re_sentiment_median", "re_vote_score", "re_upvote_ratio", "re_post_comments",
-                    "re_processed_comments", "re_created_timestamp"
-                    ]
-    complete_df = pd.DataFrame(tuples_list, columns=columns_list)
-    return complete_df
+    columns_list = ["title"]
+    top_df = pd.DataFrame(tuples_list, columns=columns_list)
+    return top_df
+
+
+def get_bottom_stories(conn: connection) -> pd.DataFrame:   # pragma: no cover
+    "Function that joins all SQL tables."
+    query = """SELECT title from stories WHERE stories.pub_date BETWEEN NOW() - INTERVAL '24 HOURS'
+    AND NOW() ORDER BY media_sentiment ASC LIMIT 3;"""
+    with conn.cursor() as cur:
+        cur.execute(query)
+        tuples_list = cur.fetchall()
+    columns_list = ["title"]
+    bottom_df = pd.DataFrame(tuples_list, columns=columns_list)
+    return bottom_df
 
 
 def get_media_averages(conn: connection) -> pd.DataFrame:   # pragma: no cover
@@ -63,6 +61,39 @@ GROUP BY source_name ORDER BY source_name;"""
     stories_df = pd.DataFrame(tuples_list, columns=[
         "source_name", "average_media_sentiment"])
     return stories_df
+
+
+def get_topic_counts(conn: connection) -> pd.DataFrame:   # pragma: no cover
+    "Function that gets the count of topics discussed in last 24 hours"
+    query = """WITH top_keywords AS (
+    SELECT
+        keywords.keyword,
+        (
+            COUNT(DISTINCT stories.story_id) + COUNT(DISTINCT ra.re_article_id)
+        ) AS total_count
+    FROM
+        keywords
+    JOIN story_keyword_link ON keywords.keyword_id = story_keyword_link.keyword_id
+    JOIN stories ON story_keyword_link.story_id = stories.story_id
+    JOIN reddit_keyword_link rl ON keywords.keyword_id = rl.keyword_id
+    JOIN reddit_article ra ON ra.re_article_id = rl.re_article_id
+    WHERE
+        stories.pub_date >= (CURRENT_TIMESTAMP - INTERVAL '24 hours')
+        AND ra.re_created_timestamp >= (CURRENT_TIMESTAMP - INTERVAL '24 hours')
+    GROUP BY
+        keywords.keyword
+    ORDER BY
+        total_count DESC
+    LIMIT 5
+)
+SELECT *
+FROM top_keywords ORDER BY total_count ASC;"""
+    with conn.cursor() as cur:
+        cur.execute(query)
+        tuples_list = cur.fetchall()
+    topics_df = pd.DataFrame(tuples_list, columns=[
+        "keyword", "total_count"])
+    return topics_df
 
 
 def get_db_connection():   # pragma: no cover
@@ -134,8 +165,8 @@ def create_most_popular_topics_bar_chart(data, file_name: str) -> None:    # pra
             t=0,  # top margin
         )
     )
-    y_list = list(data.keys())
-    x_list = list(data.values())
+    y_list = list(data["keyword"])
+    x_list = list(data["total_count"])
     horizontal_fig = go.Figure(layout=layout, data=[go.Bar(
         x=x_list,
         y=y_list,
@@ -144,35 +175,15 @@ def create_most_popular_topics_bar_chart(data, file_name: str) -> None:    # pra
     horizontal_fig.write_image(file_name)
 
 
-def get_last_24_hours_of_data(all_data: pd.DataFrame) -> pd.DataFrame:
-    """Function that filters out all data to the data from the
-    last 24 hours only"""
-    all_data["article_datetime"] = pd.to_datetime(
-        all_data['pub_date'])
-    all_data["reddit_datetime"] = pd.to_datetime(
-        all_data['re_created_timestamp'])
-
-    now = datetime.now()
-    one_day = timedelta(days=1)
-
-    stories_in_last_24_hours = all_data[
-        (now - all_data["article_datetime"] < one_day) &
-        (now - all_data["reddit_datetime"] < one_day)]
-
-    return stories_in_last_24_hours
-
-
-def create_report(recent_data: pd.DataFrame, media_average_data: pd.DataFrame) -> str:  # pragma: no cover
+def create_report(top: pd.DataFrame, bottom: pd.DataFrame, media_average_data: pd.DataFrame,
+                  count_of_topics: pd.DataFrame) -> str:  # pragma: no cover
     """Creates the HTML template for the report, including all visualizations as
     images within the HTML wrapper.
     """
 
-    sorted_article_data = recent_data.sort_values(
-        by='average_sentiment', ascending=False)
+    top_5_titles = top.head(3)["title"]
 
-    top_5_titles = sorted_article_data.head(4)["title"]
-
-    lowest_5_titles = sorted_article_data.tail(4)["title"]
+    lowest_5_titles = bottom.tail(3)["title"]
 
     stories_sources_average = media_average_data["average_media_sentiment"]
 
@@ -188,12 +199,8 @@ def create_report(recent_data: pd.DataFrame, media_average_data: pd.DataFrame) -
     create_gauge_figure(
         daily_mail_sentiment_score, "Daily Mail", "/tmp/daily_mail_plot.svg", daily_mail_line_color)
 
-    most_popular_topics = recent_data["keyword"].value_counts().head(
-        5).sort_values(
-        ascending=True).to_dict()
-
     create_most_popular_topics_bar_chart(
-        most_popular_topics, "/tmp/most_popular_plot.svg")
+        count_of_topics, "/tmp/most_popular_plot.svg")
 
     template = f'''
 <html>
@@ -332,15 +339,14 @@ def handler(event, context):  # pragma: no cover
     media_averages = get_media_averages(db_conn)
     print("joined_stories_works")
 
-    complete_df = join_all_info(db_conn)
-    complete_df["average_sentiment"] = (
-        complete_df["media_sentiment"] + complete_df["re_sentiment_mean"])/2
-    print("joined_all_works")
+    topic_counts = get_topic_counts(db_conn)
 
-    last_24_hour_data = get_last_24_hours_of_data((complete_df))
+    top_stories = get_top_stories(db_conn)
+
+    bottom_stories = get_bottom_stories(db_conn)
 
     report_template = create_report(
-        last_24_hour_data, media_averages)
+        top_stories, bottom_stories, media_averages, topic_counts)
     print("report_template_works")
 
     convert_html_to_pdf(report_template)
