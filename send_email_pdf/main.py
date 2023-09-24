@@ -325,7 +325,7 @@ def send_email(email_message: MIMEMultipart) -> None:  # pragma: no cover
     ses_client = client("ses", aws_access_key_id=environ.get("ACCESS_KEY"),
                         aws_secret_access_key=environ.get("SECRET_KEY"))
     ses_client.send_raw_email(Source=environ.get("EMAIL_SENDER"),
-                              Destinations=environ.get("EMAIL_RECIPIENT"),
+                              Destinations=[environ.get("EMAIL_RECIPIENT")],
                               RawMessage={"Data": email_message.as_string()})
     print("Email sent.")
 
@@ -359,3 +359,6 @@ def handler(event, context):  # pragma: no cover
     return {
         "status": "success"
     }
+
+
+handler(0, 0)
